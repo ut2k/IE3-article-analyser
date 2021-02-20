@@ -14,7 +14,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 def main():
 
     print("\nCleaning json...")
-    clean_json('../Dataset/released_data.json', '../Dataset/cleaned_data.json')
+    clean_json('../released_data.json', '../Dataset/cleaned_data.json')
     # clean_json('../Dataset/small_test_data.json', '../Dataset/cleaned_data.json')
 
     print("\nReading json...")
