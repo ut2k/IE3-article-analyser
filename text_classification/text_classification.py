@@ -71,7 +71,7 @@ def classify_out_of_sample(clf_name, path, vectorizer, vec_name):
     # transform new article into doc-term matrix
     article_counts = vectorizer.transform(article['content'])
     # run trained model on new article
-    filename = "Models/" + clf_name + "_"+ vec_name +"model.sav"
+    filename = "Models/" + vec_name + "_" + clf_name + ".sav"
     loaded_clf = pickle.load(open(filename, 'rb'))
     predicted = loaded_clf.predict(article_counts)
 
@@ -111,7 +111,7 @@ def count_vectorization(data: pd.DataFrame, target_clf=""):
         print(F"{accuracy:.2%} - {name}")
 
         # saves model by name
-        filename = 'Models/' + name + '_cvmodel.sav'
+        filename = 'Models/vc_' + name + '.sav'
         pickle.dump(clf, open(filename, 'wb'))
 
     # trains and predicts for the target_clf only
@@ -150,7 +150,7 @@ def tf_idf(data: pd.DataFrame, target_clf=""):
         print(F"{accuracy:.2%} - {name}")
 
         # saves model by name
-        filename = 'Models/' + name + '_tfmodel.sav'
+        filename = 'Models/tf' + name + '.sav'
         pickle.dump(clf, open(filename, 'wb'))
 
     # trains and predicts for the target_clf only
