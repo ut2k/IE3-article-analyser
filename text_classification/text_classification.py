@@ -1,8 +1,5 @@
-import json
-import csv
-import nltk
+import pickle
 import pandas as pd
-import scipy
 from sklearn.feature_extraction.text import CountVectorizer
 from nltk.tokenize import RegexpTokenizer
 from sklearn.model_selection import train_test_split
@@ -30,7 +27,7 @@ classifiers = {
     "DecisionTreeClassifier": DecisionTreeClassifier(),
     "RandomForestClassifier": RandomForestClassifier(),
     "LogisticRegression": LogisticRegression(max_iter=2000),
-    # "MLPClassifier": MLPClassifier(max_iter=7500),
+    "MLPClassifier": MLPClassifier(max_iter=500),
     "AdaBoostClassifier": AdaBoostClassifier(),
 }
 
@@ -38,35 +35,66 @@ classifiers = {
 def main():
     print("\nCleaning json...")
     clean_json('../released_data.json', '../Dataset/cleaned_data.json') # uncomment to ues full dataset
-    # clean_json('../Dataset/test_data.json', '../Dataset/cleaned_data.json') # comment to use smaller dataset
+    # clean_json('../Dataset/small_test_data.json', '../Dataset/cleaned_data.json') # comment to use smaller dataset
 
     print("\nReading json...")
     # reads json data into a pandas dataframe object
     data = pd.read_json('../Dataset/cleaned_data.json')
     data.info()
 
-    clf_name = "AdaBoost"
+    clf_name = "AdaBoostClassifier"
     path = '../Dataset/test_article.json'
 
     print("\nCV training...")
-    # count_vectorization(data)  # uncomment to test all classifiers
-    count_vectorization(data, clf_name, path) # uncomment to test one classifier and run test articles
+    # count_vectorization(data)  # uncomment to train all classifiers
+    count_vectorization(data, clf_name) # uncomment to train specific classifier
 
     print("\nTF training...")
-    # tf_idf(data) # uncomment to test all classifiers
-    tf_idf(data, clf_name, path) # uncomment to test one classifier and run test articles
+    # tf_idf(data) # uncomment to train all classifiers
+    tf_idf(data, clf_name) # uncomment to train specific classifier
+
+    print("\nCV Test Out of Sample...")
+    cv = get_cv()
+    cv.fit_transform(data['content'])
+    classify_out_of_sample(clf_name, path, cv, "cv")  # uncomment to test out of sample
+
+    print("\nTF Test Out of Sample...")
+    tf = get_tf()
+    tf.fit_transform(data['content'])
+    classify_out_of_sample(clf_name, path, tf, "tf") # uncomment to test out of sample
 
     return
+
+
+def classify_out_of_sample(clf_name, path, vectorizer, vec_name):
+    article = pd.read_json(path)
+    # transform new article into doc-term matrix
+    article_counts = vectorizer.transform(article['content'])
+    # run trained model on new article
+    filename = "Models/" + clf_name + "_"+ vec_name +"model.sav"
+    loaded_clf = pickle.load(open(filename, 'rb'))
+    predicted = loaded_clf.predict(article_counts)
+
+    for i in range(len(predicted)):
+        print("\"" + article['title'][i][:20] + "...\" : " + predicted[i])
+
+    return
+
+
+def get_cv():
+    # generates document term matrix using CV
+    token = RegexpTokenizer(r'[a-zA-Z0-9]+')
+    # removes stop words, symbols and change to lowercase
+    cv = CountVectorizer(lowercase=True, stop_words='english', ngram_range=(1, 1), tokenizer=token.tokenize)
+
+    return cv
 
 
 # data: full dataset to be trained and tested on
 # target_clf (optional): the name of the specific classifier to be used
 # target_path (optional): file path for new untagged article (must be json)
-def count_vectorization(data: pd.DataFrame, target_clf="", target_path=""):
-    # generates document term matrix using CV
-    token = RegexpTokenizer(r'[a-zA-Z0-9]+')
-    # removes stop words, symbols and change to lowercase
-    cv = CountVectorizer(lowercase=True, stop_words='english', ngram_range=(1, 1), tokenizer=token.tokenize)
+def count_vectorization(data: pd.DataFrame, target_clf=""):
+    cv = get_cv()
     # learn(fit) vocab dictionary and return doc-term matrix
     text_counts = cv.fit_transform(data['content'])
 
@@ -82,34 +110,33 @@ def count_vectorization(data: pd.DataFrame, target_clf="", target_path=""):
         accuracy = metrics.accuracy_score(y_test, predicted)
         print(F"{accuracy:.2%} - {name}")
 
-        # if target_clf provided, will run trained model on test case at target_path
-        if len(target_clf) > 0 and len(target_path):
-            article = pd.read_json(target_path)
-            # transform new article into doc-term matrix
-            article_counts = cv.transform(article['content'])
-            # run trained model on new article
-            predicted = clf.predict(article_counts)
-            print("Reading new articles:...")
-            for i in range(len(predicted)):
-                print("\"" + article['title'][i][:20] + "...\" : " + predicted[i])
+        # saves model by name
+        filename = 'Models/' + name + '_cvmodel.sav'
+        pickle.dump(clf, open(filename, 'wb'))
 
     # trains and predicts for the target_clf only
-    for name, sklearn_clf in classifiers.items():
-        if len(target_clf) > 0 and target_clf in name:
-            fit_and_predict(name, sklearn_clf)
+    for name_, sklearn_clf_ in classifiers.items():
+        if len(target_clf) > 0 and target_clf in name_:
+            fit_and_predict(name_, sklearn_clf_)
             return
 
     # trains and predicts for all classifiers
-    for name, sklearn_clf in classifiers.items():
-        fit_and_predict(name, sklearn_clf)
+    for name_, sklearn_clf_ in classifiers.items():
+        fit_and_predict(name_, sklearn_clf_)
 
     return
 
 
-# use tf-idf to normalize document term matrix
-def tf_idf(data: pd.DataFrame, target_clf="", target_path=""):
+def get_tf():
     token = RegexpTokenizer(r'[a-zA-Z0-9]+')
     tf = TfidfVectorizer(lowercase=True, stop_words='english', tokenizer=token.tokenize)
+
+    return tf
+
+
+# use tf-idf to normalize document term matrix
+def tf_idf(data: pd.DataFrame, target_clf=""):
+    tf = get_tf()
     text_tf = tf.fit_transform(data['content'])
     X_train, X_test, y_train, y_test = train_test_split(
         text_tf, data['allsides_bias'], test_size=0.3, random_state=123)
@@ -122,16 +149,9 @@ def tf_idf(data: pd.DataFrame, target_clf="", target_path=""):
         accuracy = metrics.accuracy_score(y_test, predicted)
         print(F"{accuracy:.2%} - {name}")
 
-        # if target_clf provided, will run trained model on test case at target_path
-        if len(target_clf) > 0 and len(target_path):
-            article = pd.read_json(target_path)
-            # transform new article into doc-term matrix
-            article_counts = tf.transform(article['content'])
-            # run trained model on new article
-            predicted = clf.predict(article_counts)
-            print("Reading new articles:...")
-            for i in range(len(predicted)):
-                print("\"" + article['title'][i][:20] + "...\" : " + predicted[i])
+        # saves model by name
+        filename = 'Models/' + name + '_tfmodel.sav'
+        pickle.dump(clf, open(filename, 'wb'))
 
     # trains and predicts for the target_clf only
     for name, sklearn_clf in classifiers.items():
