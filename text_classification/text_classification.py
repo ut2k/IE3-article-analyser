@@ -21,6 +21,7 @@ from sklearn import metrics
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 
+# comment/uncomment to choose classifiers to be trained
 classifiers = {
     # "BernoulliNB": BernoulliNB(),
     "ComplementNB": ComplementNB(),
@@ -36,20 +37,24 @@ classifiers = {
 
 def main():
     print("\nCleaning json...")
-    clean_json('../released_data.json', '../Dataset/cleaned_data.json')
-    # clean_json('../Dataset/test_data.json', '../Dataset/cleaned_data.json')
+    clean_json('../released_data.json', '../Dataset/cleaned_data.json') # uncomment to ues full dataset
+    # clean_json('../Dataset/test_data.json', '../Dataset/cleaned_data.json') # comment to use smaller dataset
 
     print("\nReading json...")
     # reads json data into a pandas dataframe object
     data = pd.read_json('../Dataset/cleaned_data.json')
     data.info()
 
+    clf_name = "AdaBoost"
+    path = '../Dataset/test_article.json'
+
     print("\nCV training...")
-    # count_vectorization(data)
-    count_vectorization(data, "AdaBoost", '../Dataset/test_article.json')
+    # count_vectorization(data)  # uncomment to test all classifiers
+    count_vectorization(data, clf_name, path) # uncomment to test one classifier and run test articles
 
     print("\nTF training...")
-    tf_idf(data, "AdaBoost", '../Dataset/test_article.json')
+    # tf_idf(data) # uncomment to test all classifiers
+    tf_idf(data, clf_name, path) # uncomment to test one classifier and run test articles
 
     return
 
