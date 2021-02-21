@@ -111,7 +111,7 @@ def count_vectorization(data: pd.DataFrame, target_clf=""):
         print(F"{accuracy:.2%} - {name}")
 
         # saves model by name
-        filename = 'Models/vc_' + name + '.sav'
+        filename = 'Models/cv_' + name + '.sav'
         pickle.dump(clf, open(filename, 'wb'))
 
     # trains and predicts for the target_clf only
