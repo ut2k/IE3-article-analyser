@@ -26,8 +26,8 @@ classifiers = {
     # "KNeighborsClassifier": KNeighborsClassifier(),
     "DecisionTreeClassifier": DecisionTreeClassifier(),
     "RandomForestClassifier": RandomForestClassifier(),
-    "LogisticRegression": LogisticRegression(max_iter=2000),
-    "MLPClassifier": MLPClassifier(max_iter=500),
+    "LogisticRegression": LogisticRegression(max_iter=2500),
+    # "MLPClassifier": MLPClassifier(max_iter=500),
     "AdaBoostClassifier": AdaBoostClassifier(),
 }
 
@@ -42,7 +42,7 @@ def main():
     data = pd.read_json('../Dataset/cleaned_data.json')
     data.info()
 
-    clf_name = "AdaBoostClassifier"
+    clf_name = "LogisticRegression"
     path = '../Dataset/test_article.json'
 
     print("\nCV training...")
@@ -150,7 +150,7 @@ def tf_idf(data: pd.DataFrame, target_clf=""):
         print(F"{accuracy:.2%} - {name}")
 
         # saves model by name
-        filename = 'Models/tf' + name + '.sav'
+        filename = 'Models/tf_' + name + '.sav'
         pickle.dump(clf, open(filename, 'wb'))
 
     # trains and predicts for the target_clf only
