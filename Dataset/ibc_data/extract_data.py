@@ -95,6 +95,29 @@ def get_ibc_data(use_neutral=False,
         return X, Y
 
 
+def find_most_common(lib_Fdist, con_Fdist, neu_Fdist, n):
+    lib_len = 2025
+    con_len = 1701
+    neu_len = 600
+
+    lib_Fdist.clear()
+    con_Fdist.clear()
+    neu_Fdist.clear()
+
+    i = 0
+    for sent in X:
+        clean_sent = clean_text(sent)
+        for g in ngrams(word_tokenize(clean_sent), n):
+            if Y[i] == 0:
+                lib_Fdist[g] += 1000/lib_len
+            if Y[i] == 1:
+                con_Fdist[g] += 1000/con_len
+            if Y[i] == 2:
+                neu_Fdist[g] += 1000/neu_len
+
+        i += 1
+
+
 if __name__ == '__main__':
 
     REPLACE_BY_SPACE_RE = re.compile('[/(){}\[\]\|@,;]')
@@ -113,55 +136,72 @@ if __name__ == '__main__':
                            use_subsampling=True,
                            return_subsampling_depths=True)
 
-    lib_fdist = FreqDist()
-    con_fdist = FreqDist()
+    lib_Fdist = FreqDist()
+    con_Fdist = FreqDist()
+    neu_Fdist = FreqDist()
 
-    i = 0
-    for sent in X:
-        clean_sent = clean_text(sent)
-        for word in word_tokenize(clean_sent):
-            if Y[i] == 0:
-                lib_fdist[word] += 1
-            if Y[i] == 1:
-                con_fdist[word] += 1
+    lib_dict = dict()
+    con_dict = dict()
+    neu_dict = dict()
+    gen_dict = dict()
 
-        i += 1
+    max_features = 2000
 
-    print(lib_fdist.most_common(20))
-    print(con_fdist.most_common(20))
+    def fdist_to_dict(fd, d):
+        for term, freq in fd.most_common(max_features): # for n-grams: [(("word_1","word_2",...,"word_n"), freq),...]
+            d.setdefault(term, []).append(freq)
 
-    lib_bgFdist = FreqDist()
-    con_bgFdist = FreqDist()
+    find_most_common(lib_Fdist, con_Fdist, neu_Fdist, 1)
+    fdist_to_dict(lib_Fdist, lib_dict)
+    fdist_to_dict(con_Fdist, con_dict)
+    fdist_to_dict(neu_Fdist, neu_dict)
 
-    i = 0
-    for sent in X:
-        clean_sent = clean_text(sent)
-        for bg in ngrams(word_tokenize(clean_sent), 2):
-            if Y[i] == 0:
-                lib_bgFdist[bg] += 1
-            if Y[i] == 1:
-                con_bgFdist[bg] += 1
+    # find_most_common(lib_Fdist, con_Fdist, neu_Fdist, 2)
+    # fdist_to_dict(lib_Fdist, lib_dict)
+    # fdist_to_dict(con_Fdist, con_dict)
+    # fdist_to_dict(neu_Fdist, neu_dict)
+    #
+    # find_most_common(lib_Fdist, con_Fdist, neu_Fdist, 3)
+    # fdist_to_dict(lib_Fdist, lib_dict)
+    # fdist_to_dict(con_Fdist, con_dict)
+    # fdist_to_dict(neu_Fdist, neu_dict)
 
-        i += 1
+    # create neu_list.csv from gen_dict
+    def add_to_gen_dict(d):
+        for term, freq in d.items():
+            if term in gen_dict:
+                gen_dict[term][0] += freq[0]
+            else:
+                gen_dict[term] = freq
 
-    print(lib_bgFdist.most_common(20))
-    print(con_bgFdist.most_common(20))
+    add_to_gen_dict(lib_dict)
+    add_to_gen_dict(con_dict)
+    add_to_gen_dict(neu_dict)
 
-    lib_tgFdist = FreqDist()
-    con_tgFdist = FreqDist()
+    def dict_to_file(path, d):
+        with open(path, 'w') as f:
+            f.write("gram,1st,2nd,3rd,freq\n")
+            for term, freq in d.items():
+                if len(term) == 1:
+                    f.write(F"1,{term[0]}, , ,{freq[0]}\n")
+                if len(term) == 2:
+                    f.write(F"2, {term[0]},{term[1]}, ,{freq[0]}\n")
+                if len(term) == 3:
+                    f.write(F"3, {term[0]},{term[1]},{term[2]},{freq[0]}\n")
 
-    i = 0
-    for sent in X:
-        clean_sent = clean_text(sent)
-        for bg in ngrams(word_tokenize(clean_sent), 3):
-            if Y[i] == 0:
-                lib_tgFdist[bg] += 1
-            if Y[i] == 1:
-                con_tgFdist[bg] += 1
+    dict_to_file("feature_lists/neu_list.csv", gen_dict)
 
-        i += 1
+    # remove all overlap between lib and conv
+    temp_lib_dict = dict()
+    for term, freq in lib_dict.items():
+        if term in con_dict:
+            con_dict.pop(term)
+        else:
+            temp_lib_dict[term] = freq
 
-    print(lib_tgFdist.most_common(20))
-    print(con_tgFdist.most_common(20))
+    lib_dict = temp_lib_dict
 
-    # TODO: get rid of overlap b/n lib and con
+    dict_to_file("feature_lists/lib_list.csv", lib_dict)
+    dict_to_file("feature_lists/con_list.csv", con_dict)
+
+
