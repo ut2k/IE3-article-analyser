@@ -1,0 +1,20 @@
+
+12:41:35 28/02/2021 - New training session:
+12:41:35 28/02/2021 - 69.01% - cvComplementNB
+12:41:42 28/02/2021 - 72.52% - cvDecisionTreeClassifier
+12:42:00 28/02/2021 - 69.87% - cvRandomForestClassifier
+12:42:28 28/02/2021 - 72.91% - cvLogisticRegression
+12:42:46 28/02/2021 - 77.93% - cvAdaBoostClassifier
+
+12:43:01 28/02/2021 - New training session:
+12:43:01 28/02/2021 - 52.64% - tfComplementNB
+12:43:10 28/02/2021 - 71.92% - tfDecisionTreeClassifier
+12:43:26 28/02/2021 - 71.54% - tfRandomForestClassifier
+12:43:35 28/02/2021 - 73.38% - tfLogisticRegression
+12:44:04 28/02/2021 - 79.00% - tfAdaBoostClassifier
+
+12:44:17 28/02/2021 - New training session:
+12:44:17 28/02/2021 - 74.80% - plSGDClassifier
+
+12:51:35 28/02/2021 - New training session:
+12:51:35 28/02/2021 - 72.52% - d2vLogisticRegression
