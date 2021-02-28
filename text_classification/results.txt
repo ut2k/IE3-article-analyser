@@ -19,8 +19,8 @@
 13:08:31 28/02/2021 - 72.91% - cvLogisticRegression
 13:08:54 28/02/2021 - 77.93% - cvAdaBoostClassifier
 
-04:48:33 01/03/2021 - New training session:
-04:48:34 01/03/2021 - 76.34% - plSGDClassifier
+16:48:33 01/03/2021 - New training session:
+16:48:34 01/03/2021 - 76.34% - plSGDClassifier
 
-05:18:54 01/03/2021 - New training session:
-05:18:54 01/03/2021 - 82.85% - plAdaBoostClassifier
+17:18:54 01/03/2021 - New training session:
+17:18:54 01/03/2021 - 82.85% - plAdaBoostClassifier
