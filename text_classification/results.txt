@@ -18,3 +18,10 @@
 
 12:51:35 28/02/2021 - New training session:
 12:51:35 28/02/2021 - 72.52% - d2vLogisticRegression
+
+13:07:22 28/02/2021 - New training session:
+13:07:22 28/02/2021 - 69.01% - cvComplementNB
+13:07:30 28/02/2021 - 72.27% - cvDecisionTreeClassifier
+13:07:50 28/02/2021 - 69.95% - cvRandomForestClassifier
+13:08:31 28/02/2021 - 72.91% - cvLogisticRegression
+13:08:54 28/02/2021 - 77.93% - cvAdaBoostClassifier

@@ -338,14 +338,14 @@ def doc2Vec(data: pd.DataFrame):
 
 
 def log_results(result: str):
-    with open("Models/results.txt", 'a') as f:
+    with open("results.txt", 'a') as f:
         now = datetime.now()
         dt_string = now.strftime("%H:%M:%S %d/%m/%Y");
         f.write(dt_string + " - " + result + "\n")
 
 
 def log_new():
-    with open("Models/results.txt", 'a') as f:
+    with open("results.txt", 'a') as f:
         now = datetime.now()
         dt_string = now.strftime("%H:%M:%S %d/%m/%Y");
         f.write("\n" + dt_string + " - New training session:\n")
