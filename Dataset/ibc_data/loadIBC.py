@@ -1,7 +1,7 @@
 import pickle
 
 if __name__ == '__main__':
-    [lib, con, neutral] = pickle.load(open('sampleData.pkl', 'rb'))
+    [lib, con, neutral] = pickle.load(open('ibcData.pkl', 'rb'))
 
     # how to access sentence text
     print('Liberal examples (out of ', len(lib), ' sentences): ')
@@ -17,7 +17,7 @@ if __name__ == '__main__':
         print(tree.get_words())
 
     # how to access phrase labels for a particular tree
-    ex_tree = lib[0]
+    ex_tree = con[4]
 
     print('\nPhrase labels for one tree: ')
 
