@@ -23,4 +23,4 @@
 04:48:34 01/03/2021 - 76.34% - plSGDClassifier
 
 05:18:54 01/03/2021 - New training session:
-05:18:54 01/03/2021 - 82.85% - plSGDClassifier
+05:18:54 01/03/2021 - 82.85% - plAdaBoostClassifier
