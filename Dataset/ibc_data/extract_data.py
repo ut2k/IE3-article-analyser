@@ -104,6 +104,18 @@ def find_most_common(lib_Fdist, con_Fdist, neu_Fdist, n):
     con_Fdist.clear()
     neu_Fdist.clear()
 
+    REPLACE_BY_SPACE_RE = re.compile('[/(){}\[\]\|@,;]')
+    BAD_SYMBOLS_RE = re.compile('[^0-9a-z #+_]')
+    STOPWORDS = set(stopwords.words('english'))
+    STOPWORDS.update(['would', 'use', 'make'])
+
+    def clean_text(text):
+        text = text.lower()  # lowercase text
+        text = REPLACE_BY_SPACE_RE.sub(' ', text)  # replace REPLACE_BY_SPACE_RE symbols by space in text
+        text = BAD_SYMBOLS_RE.sub('', text)  # delete symbols which are in BAD_SYMBOLS_RE from text
+        text = ' '.join(word for word in text.split() if word not in STOPWORDS)  # delete stopwors from text
+        return text
+
     i = 0
     for sent in X:
         clean_sent = clean_text(sent)
@@ -119,18 +131,6 @@ def find_most_common(lib_Fdist, con_Fdist, neu_Fdist, n):
 
 
 if __name__ == '__main__':
-
-    REPLACE_BY_SPACE_RE = re.compile('[/(){}\[\]\|@,;]')
-    BAD_SYMBOLS_RE = re.compile('[^0-9a-z #+_]')
-    STOPWORDS = set(stopwords.words('english'))
-    STOPWORDS.update(['would', 'use', 'make'])
-
-    def clean_text(text):
-        text = text.lower()  # lowercase text
-        text = REPLACE_BY_SPACE_RE.sub(' ', text)  # replace REPLACE_BY_SPACE_RE symbols by space in text
-        text = BAD_SYMBOLS_RE.sub('', text)  # delete symbols which are in BAD_SYMBOLS_RE from text
-        text = ' '.join(word for word in text.split() if word not in STOPWORDS)  # delete stopwors from text
-        return text
 
     X, Y, P = get_ibc_data(use_neutral=True,
                            use_subsampling=True,

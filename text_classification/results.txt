@@ -19,14 +19,14 @@
 13:08:31 28/02/2021 - 72.91% - cvLogisticRegression
 13:08:54 28/02/2021 - 77.93% - cvAdaBoostClassifier
 
-16:48:33 01/03/2021 - New training session:
-16:48:34 01/03/2021 - 76.34% - ibcSGDClassifier
-
 17:18:54 01/03/2021 - New training session:
 17:18:54 01/03/2021 - 82.85% - plAdaBoostClassifier
 
-21:35:35 01/03/2021 - New training session:
-21:35:35 01/03/2021 - 84.14% - ibcAdaBoostClassifier
+01:33:57 02/03/2021 - New training session:
+01:33:57 02/03/2021 - 83.41% - ibcAdaBoostClassifier
 
-00:01:24 02/03/2021 - New training session:
-00:01:24 02/03/2021 - 82.77% - ibcAdaBoostClassifier
+01:34:07 02/03/2021 - New training session:
+01:34:07 02/03/2021 - 76.98% - ibcSGDClassifier
+
+02:53:55 02/03/2021 - New training session:
+02:53:56 02/03/2021 - 88.51% - ibcAdaBoostClassifier - 51.50.75

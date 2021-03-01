@@ -18,6 +18,7 @@ from sklearn.ensemble import AdaBoostClassifier
 from sklearn import metrics
 from sklearn.linear_model import SGDClassifier
 
+import time
 
 
 def main():
@@ -104,7 +105,7 @@ def ibc_classify(data: pd.DataFrame):
     UNI_FACTOR, BI_FACTOR, TRI_FACTOR = 5, 1.5, .75
     VEC_ID = F"{UNI_FACTOR}{BI_FACTOR}{TRI_FACTOR}"
     print('\nIntegrating IBC data...')
-    DO_IBC_INTEGRATION = True
+    DO_IBC_INTEGRATION = False
     if DO_IBC_INTEGRATION:
         with open("./../Dataset/ibc_data/feature_lists/neu_list.csv", 'r') as f:
             reader = csv.DictReader(f)
@@ -204,7 +205,7 @@ def ibc_classify(data: pd.DataFrame):
         print()
 
     print('\nTfidf transform...')
-    DO_TFIDF_INTEGRATION = True
+    DO_TFIDF_INTEGRATION = False
     if DO_TFIDF_INTEGRATION:
         tfidf_counts = TfidfTransformer().fit_transform(text_counts)
         filename = F'Vectorizers/{VEC_ID}_tfidf.sav'
@@ -221,7 +222,7 @@ def ibc_classify(data: pd.DataFrame):
         print()
 
     X_train, X_test, y_train, y_test = train_test_split(
-        tfidf_counts, data['allsides_bias'], test_size=0.3, random_state=328)
+        tfidf_counts, data['allsides_bias'], test_size=0.3, random_state=123)
 
     print(F"\nTraining set:")
     print(F"Ex. features in first 5 docs:")
@@ -233,26 +234,17 @@ def ibc_classify(data: pd.DataFrame):
 
     print('\nTraining Classifier...')
     # clf = SGDClassifier().fit(X_train, y_train)
+
+    start = time.time()
     clf = AdaBoostClassifier().fit(X_train, y_train)
+    end = time.time()
+    print(F"elapsed time: {end - start}")
     name = "AdaBoostClassifier"
     y_pred = clf.predict(X_test)
     log_new()
     accuracy = metrics.accuracy_score(y_test, y_pred)
     print(F"{accuracy:.2%} - ibc{name}")
-    log_results(F"{accuracy:.2%} - ibc{name}")
-    my_tags = ['From the Right', 'From the Left', 'From the Center']
-    print(classification_report(y_test, y_pred, target_names=my_tags))
-
-    filename = F'Models/{accuracy:.2%}_ibc_{name}.sav'
-    pickle.dump(clf, open(filename, 'wb'))
-
-    clf = SGDClassifier().fit(X_train, y_train)
-    name = "SGDClassifier"
-    y_pred = clf.predict(X_test)
-    log_new()
-    accuracy = metrics.accuracy_score(y_test, y_pred)
-    print(F"{accuracy:.2%} - ibc{name}")
-    log_results(F"{accuracy:.2%} - ibc{name}")
+    log_results(F"{accuracy:.2%} - ibc{name} - {VEC_ID}")
     my_tags = ['From the Right', 'From the Left', 'From the Center']
     print(classification_report(y_test, y_pred, target_names=my_tags))
 
