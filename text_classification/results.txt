@@ -30,3 +30,6 @@
 
 02:53:55 02/03/2021 - New training session:
 02:53:56 02/03/2021 - 88.51% - ibcAdaBoostClassifier - 51.50.75
+
+03:30:18 02/03/2021 - New training session:
+03:30:18 02/03/2021 - 90.70% - ibcAdaBoostClassifier - 51.50.75
