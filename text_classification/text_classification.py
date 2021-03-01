@@ -61,12 +61,12 @@ def main():
     data = pd.read_json('../Dataset/cleaned_data.json')
     data.info()
 
-    clf_name = "nothing"
+    clf_name = "AdaBoostClassifier"
     path = '../Dataset/test_article.json'
 
     print("\nCV training...")
-    count_vectorization(data)  # uncomment to train all classifiers
-    # count_vectorization(data, clf_name) # uncomment to train specific classifier
+    # count_vectorization(data)  # uncomment to train all classifiers
+    count_vectorization(data, clf_name) # uncomment to train specific classifier
 
     print("\nTF training...")
     tf_idf(data) # uncomment to train all classifiers
@@ -155,6 +155,7 @@ def count_vectorization(data: pd.DataFrame, target_clf=""):
     # trains model and compares with testing set
     # name: name of classifier, sklearn_clf: actual classifier
     def fit_and_predict(name, sklearn_clf):
+        print("train...")
         clf = sklearn_clf.fit(X_train, y_train)
 
         # filename = "Models/cv_" + name + ".sav"

@@ -20,13 +20,13 @@
 13:08:54 28/02/2021 - 77.93% - cvAdaBoostClassifier
 
 16:48:33 01/03/2021 - New training session:
-16:48:34 01/03/2021 - 76.34% - plSGDClassifier
+16:48:34 01/03/2021 - 76.34% - ibcSGDClassifier
 
 17:18:54 01/03/2021 - New training session:
 17:18:54 01/03/2021 - 82.85% - plAdaBoostClassifier
 
-18:41:32 01/03/2021 - New training session:
-18:41:32 01/03/2021 - 81.44% - ibcAdaBoostClassifier
+21:35:35 01/03/2021 - New training session:
+21:35:35 01/03/2021 - 84.14% - ibcAdaBoostClassifier
 
-18:52:10 01/03/2021 - New training session:
-18:52:11 01/03/2021 - 76.00% - ibcAdaBoostClassifier
+00:01:24 02/03/2021 - New training session:
+00:01:24 02/03/2021 - 82.77% - ibcAdaBoostClassifier

@@ -3,51 +3,21 @@ import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from nltk.tokenize import RegexpTokenizer
 from sklearn.model_selection import train_test_split
-from nltk.stem.porter import PorterStemmer
-from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from datetime import datetime
 import re
-from sklearn.pipeline import Pipeline
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.metrics import classification_report
-from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
-import itertools
 
 import csv
 
 tqdm.pandas(desc="progress-bar")
 
-from sklearn.naive_bayes import (
-    BernoulliNB,
-    ComplementNB,
-    MultinomialNB,
-)
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-from sklearn.linear_model import (
-    LogisticRegression,
-    SGDClassifier,
-)
-from sklearn.neural_network import MLPClassifier
+from sklearn.ensemble import AdaBoostClassifier
 from sklearn import metrics
+from sklearn.linear_model import SGDClassifier
 
-from sklearn.feature_extraction.text import TfidfVectorizer
-
-# comment/uncomment to choose classifiers to be trained
-classifiers = {
-    # "BernoulliNB": BernoulliNB(),
-    "ComplementNB": ComplementNB(),
-    # "MultinomialNB": MultinomialNB(),
-    # "KNeighborsClassifier": KNeighborsClassifier(),
-    "DecisionTreeClassifier": DecisionTreeClassifier(),
-    "RandomForestClassifier": RandomForestClassifier(),
-    "LogisticRegression": LogisticRegression(max_iter=10000),
-    "AdaBoostClassifier": AdaBoostClassifier(),
-    # "MLPClassifier": MLPClassifier(max_iter=1000),
-}
 
 
 def main():
@@ -60,7 +30,6 @@ def main():
     data = pd.read_json('../Dataset/cleaned_data.json')
     data.info()
 
-    print("\nIBC training...")
     ibc_classify(data)
 
     return
@@ -96,136 +65,199 @@ def clean_text(text):
     text = ' '.join(word for word in text.split() if word not in STOPWORDS)  # delete stopwors from text
     return text
 
-    # TODO try to pickle the matrices + display truncated data structure
-
 
 # use pipeline to normalize document term matrix
 def ibc_classify(data: pd.DataFrame):
-    data['content'].apply(clean_text)
+    print("First 5 docs:")
+    for i in range(5):
+        print(F"{i + 1}: {data['content'][i][:50]}...")
+
+    # print("\nClean text...")
+    # data['content'] = data['content'].apply(clean_text)
+    # print("First 5 docs:")
+    # for i in range(5):
+    #     print(F"{i + 1}: {data['content'][i][:50]}...")
+
     tokens = RegexpTokenizer(r'[a-zA-Z]+')
-    cv = CountVectorizer(tokenizer=tokens.tokenize, stop_words='english', ngram_range=(1, 3))
+    cv = CountVectorizer(tokenizer=tokens.tokenize, stop_words="english", ngram_range=(1, 3))
 
     # row: document number, col: feature frequency, ordered by get_features_names()
-    text_counts = cv.fit_transform(data['content'])
-    feature_list = cv.get_feature_names()
-    print(text_counts.shape)
+    print("\nGenerate bag of words matrix...")
+    text_counts = cv.fit_transform(tqdm(data['content']))  # returns a sparse matrix, entry = matrix[x, y]
+    M_SIZE = text_counts.shape
+    DISPLAY_INDEX = 2901508  # index for the word "people"
+    print(F"Matrix size: {M_SIZE}")
 
+    feature_list = cv.get_feature_names()
+    print(F"Ex. features: {feature_list[DISPLAY_INDEX : DISPLAY_INDEX + 5]}")
+    print(F"Ex. features in first 5 docs:")
+    for i in range(5):
+        for j in range(DISPLAY_INDEX, DISPLAY_INDEX + 5):
+            print(F"\t{text_counts[i, j]}", end=" ")
+        print()
     # turn feature_list into a dict with the index as value -> random access
     feature_dict = {feature_list[i]: i for i in range(0, len(feature_list))}
+    print(F"Index for \'people\': {feature_dict['people']}")
 
-    NEU_LEN = 14846
-    LIB_LEN = 4448
-    CON_LEN = 4448
-    ROW_LEN = text_counts.shape[0]
+    NEU_LEN, LIB_LEN, CON_LEN = 14846, 4448, 4448
+    ROW_LEN = M_SIZE[0]
+    UNI_FACTOR, BI_FACTOR, TRI_FACTOR = 5, 1.5, .75
+    VEC_ID = F"{UNI_FACTOR}{BI_FACTOR}{TRI_FACTOR}"
+    print('\nIntegrating IBC data...')
+    DO_IBC_INTEGRATION = True
+    if DO_IBC_INTEGRATION:
+        with open("./../Dataset/ibc_data/feature_lists/neu_list.csv", 'r') as f:
+            reader = csv.DictReader(f)
+            pbar = tqdm(total=NEU_LEN)
+            for row in reader:
+                if row['gram'] == '1':
+                    if row['1st'] in feature_dict:
+                        i = feature_dict[row['1st']]
+                        for doc_i in range(ROW_LEN):
+                            if text_counts[doc_i, i] > 0:
+                                text_counts[doc_i, i] *= 1.0 * float(row['freq']) / UNI_FACTOR
+                if row['gram'] == '2':
+                    word = F"{row['1st']} {row['2nd']}"
+                    if word in feature_dict:
+                        i = feature_dict[word]
+                        for doc_i in range(ROW_LEN):
+                            if text_counts[doc_i, i] > 0:
+                                text_counts[doc_i, i] *= 1.0 * float(row['freq']) / BI_FACTOR
+                if row['gram'] == '3':
+                    word = F"{row['1st']} {row['2nd']} {row['3rd']}"
+                    if word in feature_dict:
+                        i = feature_dict[word]
+                        for doc_i in range(ROW_LEN):
+                            if text_counts[doc_i, i] > 0:
+                                text_counts[doc_i, i] *= 1.0 * float(row['freq']) / TRI_FACTOR
+                pbar.update(1)
+            pbar.close()
+        with open("./../Dataset/ibc_data/feature_lists/lib_list.csv", 'r') as f:
+            reader = csv.DictReader(f)
+            pbar = tqdm(total=LIB_LEN)
+            for row in reader:
+                if row['gram'] == '1':
+                    if row['1st'] in feature_dict:
+                        i = feature_dict[row['1st']]
+                        for doc_i in range(ROW_LEN):
+                            if (data['allsides_bias'][doc_i] == "From the Left"
+                                    and text_counts[doc_i, i] > 0):
+                                text_counts[doc_i, i] *= 1.0 * float(row['freq']) / UNI_FACTOR
+                if row['gram'] == '2':
+                    word = F"{row['1st']} {row['2nd']}"
+                    if word in feature_dict:
+                        i = feature_dict[word]
+                        for doc_i in range(ROW_LEN):
+                            if (data['allsides_bias'][doc_i] == "From the Left"
+                                    and text_counts[doc_i, i] > 0):
+                                text_counts[doc_i, i] *= 1.0 * float(row['freq']) / BI_FACTOR
+                if row['gram'] == '3':
+                    word = F"{row['1st']} {row['2nd']} {row['3rd']}"
+                    if word in feature_dict:
+                        i = feature_dict[word]
+                        for doc_i in range(ROW_LEN):
+                            if (data['allsides_bias'][doc_i] == "From the Left"
+                                    and text_counts[doc_i, i] > 0):
+                                text_counts[doc_i, i] *= 1.0 * float(row['freq']) / TRI_FACTOR
 
-    with open("./../Dataset/ibc_data/feature_lists/neu_list.csv", 'r') as f:
-        reader = csv.DictReader(f)
-        pbar = tqdm(total=NEU_LEN)
-        for row in reader:
-            if row['gram'] == '1':
-                if row['1st'] in feature_dict:
-                    i = feature_dict[row['1st']]
-                    for doc_i in range(ROW_LEN):
-                        if text_counts[doc_i, i] > 0:
-                            text_counts[doc_i, i] += 1.0 * float(row['freq']) / 10
-            if row['gram'] == '2':
-                word = F"{row['1st']} {row['2nd']}"
-                if word in feature_dict:
-                    i = feature_dict[word]
-                    for doc_i in range(ROW_LEN):
-                        if text_counts[doc_i, i] > 0:
-                            text_counts[doc_i, i] += 1.0 * float(row['freq']) / 2
-            if row['gram'] == '3':
-                word = F"{row['1st']} {row['2nd']} {row['3rd']}"
-                if word in feature_dict:
-                    i = feature_dict[word]
-                    for doc_i in range(ROW_LEN):
-                        if text_counts[doc_i, i] > 0:
-                            text_counts[doc_i, i] += 1.0 * float(row['freq']) / 1.5
-            pbar.update(1)
-        pbar.close()
+                pbar.update(1)
+            pbar.close()
+        with open("./../Dataset/ibc_data/feature_lists/con_list.csv", 'r') as f:
+            reader = csv.DictReader(f)
+            pbar = tqdm(total=CON_LEN)
+            for row in reader:
+                if row['gram'] == '1':
+                    if row['1st'] in feature_dict:
+                        i = feature_dict[row['1st']]
+                        for doc_i in range(ROW_LEN):
+                            if (data['allsides_bias'][doc_i] == "From the Right"
+                                    and text_counts[doc_i, i] > 0):
+                                text_counts[doc_i, i] *= 1.0 * float(row['freq']) / UNI_FACTOR
+                if row['gram'] == '2':
+                    word = F"{row['1st']} {row['2nd']}"
+                    if word in feature_dict:
+                        i = feature_dict[word]
+                        for doc_i in range(ROW_LEN):
+                            if (data['allsides_bias'][doc_i] == "From the Right"
+                                    and text_counts[doc_i, i] > 0):
+                                text_counts[doc_i, i] *= 1.0 * float(row['freq']) / BI_FACTOR
+                if row['gram'] == '3':
+                    word = F"{row['1st']} {row['2nd']} {row['3rd']}"
+                    if word in feature_dict:
+                        i = feature_dict[word]
+                        for doc_i in range(ROW_LEN):
+                            if (data['allsides_bias'][doc_i] == "From the Right"
+                                    and text_counts[doc_i, i] > 0):
+                                text_counts[doc_i, i] *= 1.0 * float(row['freq']) / TRI_FACTOR
+                pbar.update(1)
+            pbar.close()
 
-    with open("./../Dataset/ibc_data/feature_lists/lib_list.csv", 'r') as f:
-        reader = csv.DictReader(f)
-        pbar = tqdm(total=LIB_LEN)
-        for row in reader:
-            if row['gram'] == '1':
-                if row['1st'] in feature_dict:
-                    i = feature_dict[row['1st']]
-                    for doc_i in range(ROW_LEN):
-                        if (data['allsides_bias'][doc_i] == "From the Left"
-                                and text_counts[doc_i, i] > 0):
-                            text_counts[doc_i, i] += 1.0 * float(row['freq']) / 10
-            if row['gram'] == '2':
-                word = F"{row['1st']} {row['2nd']}"
-                if word in feature_dict:
-                    i = feature_dict[word]
-                    for doc_i in range(ROW_LEN):
-                        if (data['allsides_bias'][doc_i] == "From the Left"
-                                and text_counts[doc_i, i] > 0):
-                            text_counts[doc_i, i] += 1.0 * float(row['freq']) / 2
-            if row['gram'] == '3':
-                word = F"{row['1st']} {row['2nd']} {row['3rd']}"
-                if word in feature_dict:
-                    i = feature_dict[word]
-                    for doc_i in range(ROW_LEN):
-                        if (data['allsides_bias'][doc_i] == "From the Left"
-                                and text_counts[doc_i, i] > 0):
-                            text_counts[doc_i, i] += 1.0 * float(row['freq']) / 1.5
+        filename = F'Vectorizers/{VEC_ID}_cv.sav'
+        pickle.dump(text_counts, open(filename, 'wb'))
+    else:
+        filename = F'Vectorizers/{VEC_ID}_cv.sav'
+        text_counts = pickle.load(open(filename, 'rb'))
+    print(F"Ex. features in first 5 docs:")
+    for i in range(5):
+        for j in range(DISPLAY_INDEX, DISPLAY_INDEX + 5):
+            print(F"\t{text_counts[i, j]}", end=" ")
+        print()
 
-            pbar.update(1)
-        pbar.close()
+    print('\nTfidf transform...')
+    DO_TFIDF_INTEGRATION = True
+    if DO_TFIDF_INTEGRATION:
+        tfidf_counts = TfidfTransformer().fit_transform(text_counts)
+        filename = F'Vectorizers/{VEC_ID}_tfidf.sav'
+        pickle.dump(tfidf_counts, open(filename, 'wb'))
+    else:
+        filename = F'Vectorizers/{VEC_ID}_tfidf.sav'
+        tfidf_counts = pickle.load(open(filename, 'rb'))
 
-    with open("./../Dataset/ibc_data/feature_lists/con_list.csv", 'r') as f:
-        reader = csv.DictReader(f)
-        pbar = tqdm(total=CON_LEN)
-        for row in reader:
-            if row['gram'] == '1':
-                if row['1st'] in feature_dict:
-                    i = feature_dict[row['1st']]
-                    for doc_i in range(ROW_LEN):
-                        if (data['allsides_bias'][doc_i] == "From the Right"
-                                and text_counts[doc_i, i] > 0):
-                            text_counts[doc_i, i] += 1.0 * float(row['freq']) / 10
-            if row['gram'] == '2':
-                word = F"{row['1st']} {row['2nd']}"
-                if word in feature_dict:
-                    i = feature_dict[word]
-                    for doc_i in range(ROW_LEN):
-                        if (data['allsides_bias'][doc_i] == "From the Right"
-                                and text_counts[doc_i, i] > 0):
-                            text_counts[doc_i, i] += 1.0 * float(row['freq']) / 2
-            if row['gram'] == '3':
-                word = F"{row['1st']} {row['2nd']} {row['3rd']}"
-                if word in feature_dict:
-                    i = feature_dict[word]
-                    for doc_i in range(ROW_LEN):
-                        if (data['allsides_bias'][doc_i] == "From the Right"
-                                and text_counts[doc_i, i] > 0):
-                            text_counts[doc_i, i] += 1.0 * float(row['freq']) / 1.5
-            pbar.update(1)
-        pbar.close()
-
-    tfidf_counts = TfidfTransformer().fit_transform(text_counts)
     # tfidf_counts = text_counts
-    X_train, X_test, y_train, y_test = train_test_split(
-        tfidf_counts, data['allsides_bias'], test_size=0.3, random_state=298)
+    print(F"Ex. features in first 5 docs:")
+    for i in range(5):
+        for j in range(DISPLAY_INDEX, DISPLAY_INDEX + 5):
+            print(F"\t{tfidf_counts[i, j]:.2}", end=" ")
+        print()
 
+    X_train, X_test, y_train, y_test = train_test_split(
+        tfidf_counts, data['allsides_bias'], test_size=0.3, random_state=328)
+
+    print(F"\nTraining set:")
+    print(F"Ex. features in first 5 docs:")
+    for i in range(5):
+        for j in range(DISPLAY_INDEX, DISPLAY_INDEX + 5):
+            print(F"\t{X_train[i, j]:.2}", end=" ")
+        print()
+    print(F"First 5 tags: \n{y_train[:5]}")
+
+    print('\nTraining Classifier...')
     # clf = SGDClassifier().fit(X_train, y_train)
     clf = AdaBoostClassifier().fit(X_train, y_train)
-
+    name = "AdaBoostClassifier"
     y_pred = clf.predict(X_test)
     log_new()
     accuracy = metrics.accuracy_score(y_test, y_pred)
-    name = "AdaBoostClassifier"
     print(F"{accuracy:.2%} - ibc{name}")
     log_results(F"{accuracy:.2%} - ibc{name}")
     my_tags = ['From the Right', 'From the Left', 'From the Center']
     print(classification_report(y_test, y_pred, target_names=my_tags))
 
-    filename = 'Models/ibc_' + name + '.sav'
+    filename = F'Models/{accuracy:.2%}_ibc_{name}.sav'
     pickle.dump(clf, open(filename, 'wb'))
 
+    clf = SGDClassifier().fit(X_train, y_train)
+    name = "SGDClassifier"
+    y_pred = clf.predict(X_test)
+    log_new()
+    accuracy = metrics.accuracy_score(y_test, y_pred)
+    print(F"{accuracy:.2%} - ibc{name}")
+    log_results(F"{accuracy:.2%} - ibc{name}")
+    my_tags = ['From the Right', 'From the Left', 'From the Center']
+    print(classification_report(y_test, y_pred, target_names=my_tags))
+
+    filename = F'Models/{accuracy:.2%}_ibc_{name}.sav'
+    pickle.dump(clf, open(filename, 'wb'))
     return
 
 
