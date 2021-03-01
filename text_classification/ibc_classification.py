@@ -60,11 +60,8 @@ def main():
     data = pd.read_json('../Dataset/cleaned_data.json')
     data.info()
 
-    clf_name = "nothing"
-
-    print("\nPipeline training...")
-    pipeline(data)  # uncomment to train all classifiers
-    # pipeline(data, clf_name)  # uncomment to train specific classifier
+    print("\nIBC training...")
+    ibc_classify(data)
 
     return
 
@@ -99,62 +96,113 @@ def clean_text(text):
     text = ' '.join(word for word in text.split() if word not in STOPWORDS)  # delete stopwors from text
     return text
 
+    # TODO try to pickle the matrices + display truncated data structure
+
 
 # use pipeline to normalize document term matrix
-def pipeline(data: pd.DataFrame):
+def ibc_classify(data: pd.DataFrame):
     data['content'].apply(clean_text)
     tokens = RegexpTokenizer(r'[a-zA-Z]+')
-    cv = CountVectorizer(tokenizer=tokens.tokenize, stop_words='english')
+    cv = CountVectorizer(tokenizer=tokens.tokenize, stop_words='english', ngram_range=(1, 3))
 
     # row: document number, col: feature frequency, ordered by get_features_names()
     text_counts = cv.fit_transform(data['content'])
     feature_list = cv.get_feature_names()
-
     print(text_counts.shape)
 
     # turn feature_list into a dict with the index as value -> random access
     feature_dict = {feature_list[i]: i for i in range(0, len(feature_list))}
 
+    NEU_LEN = 14846
+    LIB_LEN = 4448
+    CON_LEN = 4448
+    ROW_LEN = text_counts.shape[0]
+
     with open("./../Dataset/ibc_data/feature_lists/neu_list.csv", 'r') as f:
         reader = csv.DictReader(f)
-        pbar = tqdm(total=3268)
+        pbar = tqdm(total=NEU_LEN)
         for row in reader:
             if row['gram'] == '1':
                 if row['1st'] in feature_dict:
                     i = feature_dict[row['1st']]
-                    for doc_i in range(7774):
+                    for doc_i in range(ROW_LEN):
                         if text_counts[doc_i, i] > 0:
                             text_counts[doc_i, i] += 1.0 * float(row['freq']) / 10
+            if row['gram'] == '2':
+                word = F"{row['1st']} {row['2nd']}"
+                if word in feature_dict:
+                    i = feature_dict[word]
+                    for doc_i in range(ROW_LEN):
+                        if text_counts[doc_i, i] > 0:
+                            text_counts[doc_i, i] += 1.0 * float(row['freq']) / 2
+            if row['gram'] == '3':
+                word = F"{row['1st']} {row['2nd']} {row['3rd']}"
+                if word in feature_dict:
+                    i = feature_dict[word]
+                    for doc_i in range(ROW_LEN):
+                        if text_counts[doc_i, i] > 0:
+                            text_counts[doc_i, i] += 1.0 * float(row['freq']) / 1.5
             pbar.update(1)
         pbar.close()
 
-    # TODO try bigrams/trigrams + try to pickle the matrices
-
     with open("./../Dataset/ibc_data/feature_lists/lib_list.csv", 'r') as f:
         reader = csv.DictReader(f)
-        pbar = tqdm(total=644)
+        pbar = tqdm(total=LIB_LEN)
         for row in reader:
             if row['gram'] == '1':
                 if row['1st'] in feature_dict:
                     i = feature_dict[row['1st']]
-                    for doc_i in range(7774):
+                    for doc_i in range(ROW_LEN):
                         if (data['allsides_bias'][doc_i] == "From the Left"
                                 and text_counts[doc_i, i] > 0):
-                                text_counts[doc_i, i] += 1.0 * float(row['freq']) / 10
+                            text_counts[doc_i, i] += 1.0 * float(row['freq']) / 10
+            if row['gram'] == '2':
+                word = F"{row['1st']} {row['2nd']}"
+                if word in feature_dict:
+                    i = feature_dict[word]
+                    for doc_i in range(ROW_LEN):
+                        if (data['allsides_bias'][doc_i] == "From the Left"
+                                and text_counts[doc_i, i] > 0):
+                            text_counts[doc_i, i] += 1.0 * float(row['freq']) / 2
+            if row['gram'] == '3':
+                word = F"{row['1st']} {row['2nd']} {row['3rd']}"
+                if word in feature_dict:
+                    i = feature_dict[word]
+                    for doc_i in range(ROW_LEN):
+                        if (data['allsides_bias'][doc_i] == "From the Left"
+                                and text_counts[doc_i, i] > 0):
+                            text_counts[doc_i, i] += 1.0 * float(row['freq']) / 1.5
+
             pbar.update(1)
         pbar.close()
 
     with open("./../Dataset/ibc_data/feature_lists/con_list.csv", 'r') as f:
         reader = csv.DictReader(f)
-        pbar = tqdm(total=644)
+        pbar = tqdm(total=CON_LEN)
         for row in reader:
             if row['gram'] == '1':
                 if row['1st'] in feature_dict:
                     i = feature_dict[row['1st']]
-                    for doc_i in range(7774):
+                    for doc_i in range(ROW_LEN):
                         if (data['allsides_bias'][doc_i] == "From the Right"
                                 and text_counts[doc_i, i] > 0):
                             text_counts[doc_i, i] += 1.0 * float(row['freq']) / 10
+            if row['gram'] == '2':
+                word = F"{row['1st']} {row['2nd']}"
+                if word in feature_dict:
+                    i = feature_dict[word]
+                    for doc_i in range(ROW_LEN):
+                        if (data['allsides_bias'][doc_i] == "From the Right"
+                                and text_counts[doc_i, i] > 0):
+                            text_counts[doc_i, i] += 1.0 * float(row['freq']) / 2
+            if row['gram'] == '3':
+                word = F"{row['1st']} {row['2nd']} {row['3rd']}"
+                if word in feature_dict:
+                    i = feature_dict[word]
+                    for doc_i in range(ROW_LEN):
+                        if (data['allsides_bias'][doc_i] == "From the Right"
+                                and text_counts[doc_i, i] > 0):
+                            text_counts[doc_i, i] += 1.0 * float(row['freq']) / 1.5
             pbar.update(1)
         pbar.close()
 
@@ -170,12 +218,12 @@ def pipeline(data: pd.DataFrame):
     log_new()
     accuracy = metrics.accuracy_score(y_test, y_pred)
     name = "AdaBoostClassifier"
-    print(F"{accuracy:.2%} - pl{name}")
-    log_results(F"{accuracy:.2%} - pl{name}")
+    print(F"{accuracy:.2%} - ibc{name}")
+    log_results(F"{accuracy:.2%} - ibc{name}")
     my_tags = ['From the Right', 'From the Left', 'From the Center']
     print(classification_report(y_test, y_pred, target_names=my_tags))
 
-    filename = 'Models/pl_' + name + '.sav'
+    filename = 'Models/ibc_' + name + '.sav'
     pickle.dump(clf, open(filename, 'wb'))
 
     return

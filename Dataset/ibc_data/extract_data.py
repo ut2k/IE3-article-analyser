@@ -145,10 +145,10 @@ if __name__ == '__main__':
     neu_dict = dict()
     gen_dict = dict()
 
-    max_features = 2000
+    MAX_FEATURES = 2000
 
     def fdist_to_dict(fd, d):
-        for term, freq in fd.most_common(max_features): # for n-grams: [(("word_1","word_2",...,"word_n"), freq),...]
+        for term, freq in fd.most_common(MAX_FEATURES): # for n-grams: [(("word_1","word_2",...,"word_n"), freq),...]
             d.setdefault(term, []).append(freq)
 
     find_most_common(lib_Fdist, con_Fdist, neu_Fdist, 1)
@@ -156,15 +156,15 @@ if __name__ == '__main__':
     fdist_to_dict(con_Fdist, con_dict)
     fdist_to_dict(neu_Fdist, neu_dict)
 
-    # find_most_common(lib_Fdist, con_Fdist, neu_Fdist, 2)
-    # fdist_to_dict(lib_Fdist, lib_dict)
-    # fdist_to_dict(con_Fdist, con_dict)
-    # fdist_to_dict(neu_Fdist, neu_dict)
-    #
-    # find_most_common(lib_Fdist, con_Fdist, neu_Fdist, 3)
-    # fdist_to_dict(lib_Fdist, lib_dict)
-    # fdist_to_dict(con_Fdist, con_dict)
-    # fdist_to_dict(neu_Fdist, neu_dict)
+    find_most_common(lib_Fdist, con_Fdist, neu_Fdist, 2)
+    fdist_to_dict(lib_Fdist, lib_dict)
+    fdist_to_dict(con_Fdist, con_dict)
+    fdist_to_dict(neu_Fdist, neu_dict)
+
+    find_most_common(lib_Fdist, con_Fdist, neu_Fdist, 3)
+    fdist_to_dict(lib_Fdist, lib_dict)
+    fdist_to_dict(con_Fdist, con_dict)
+    fdist_to_dict(neu_Fdist, neu_dict)
 
     # create neu_list.csv from gen_dict
     def add_to_gen_dict(d):
