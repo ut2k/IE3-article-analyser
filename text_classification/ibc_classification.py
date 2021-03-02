@@ -80,7 +80,7 @@ def ibc_classify(data: pd.DataFrame):
 
     NEU_LEN, LIB_LEN, CON_LEN = 14846, 4448, 4448
     ROW_LEN = M_SIZE[0]
-    UNI_FACTOR, BI_FACTOR, TRI_FACTOR = .5, .25, .125
+    UNI_FACTOR, BI_FACTOR, TRI_FACTOR = .1, .025, .0125
     VEC_ID = F"{UNI_FACTOR}{BI_FACTOR}{TRI_FACTOR}"
 
     print('\nIntegrating IBC data...')
@@ -219,7 +219,7 @@ def ibc_classify(data: pd.DataFrame):
 
     DO_CLASSIFICATION = False
     name = "AdaBoostClassifier"
-    percent = "93.571%"
+    percent = "94.256%"
 
     start = time.time()
     if DO_CLASSIFICATION:
@@ -238,8 +238,10 @@ def ibc_classify(data: pd.DataFrame):
     my_tags = ['From the Right', 'From the Left', 'From the Center']
     print(classification_report(y_test, y_pred, target_names=my_tags))
 
-    filename = F'Models/{accuracy:.3%}_ibc_{name}.sav'
-    pickle.dump(clf, open(filename, 'wb'))
+    if DO_CLASSIFICATION:
+        filename = F'Models/{accuracy:.3%}_ibc_{name}.sav'
+        pickle.dump(clf, open(filename, 'wb'))
+
     return
 
 
