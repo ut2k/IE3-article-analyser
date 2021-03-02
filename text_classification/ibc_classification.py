@@ -10,14 +10,11 @@ from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.metrics import classification_report
 from tqdm import tqdm
 
-import csv
-
 tqdm.pandas(desc="progress-bar")
-
+import csv
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn import metrics
 from sklearn.linear_model import SGDClassifier
-
 import time
 
 
@@ -48,6 +45,7 @@ def clean_text(text):
 
 
 def ibc_classify(data: pd.DataFrame):
+    log_new()
     print("First 5 docs:")
     for i in range(5):
         print(F"{i + 1}: {data['content'][i][:75]}...")
@@ -66,15 +64,15 @@ def ibc_classify(data: pd.DataFrame):
     text_counts = cv.fit_transform(tqdm(data['content']))  # returns a sparse matrix, entry = matrix[x, y]
     M_SIZE = text_counts.shape
     DISPLAY_INDEX = 2901508  # index for the word "people"
-    I_RANGE = range(DISPLAY_INDEX - 2, DISPLAY_INDEX + 3)
+    I_RANGE = range(DISPLAY_INDEX, DISPLAY_INDEX + 3)
     print(F"Matrix size: {M_SIZE}")
 
     feature_list = cv.get_feature_names()
-    print(F"Select features: {feature_list[DISPLAY_INDEX : DISPLAY_INDEX + 5]}")
+    print(F"Select features: {feature_list[DISPLAY_INDEX: DISPLAY_INDEX + 3]}")
     print(F"Select features in first 5 docs:")
     for i in range(5):
         for j in I_RANGE:
-            print(F"\t{text_counts[i, j]}", end=" ")
+            print(F"\t({i}, {j}) {text_counts[i, j]}", end=" ")
         print()
     # turn feature_list into a dict with the index as value -> random access
     feature_dict = {feature_list[i]: i for i in range(0, len(feature_list))}
@@ -82,11 +80,13 @@ def ibc_classify(data: pd.DataFrame):
 
     NEU_LEN, LIB_LEN, CON_LEN = 14846, 4448, 4448
     ROW_LEN = M_SIZE[0]
-    UNI_FACTOR, BI_FACTOR, TRI_FACTOR = 2.5, .5, .25
+    UNI_FACTOR, BI_FACTOR, TRI_FACTOR = .5, .25, .125
     VEC_ID = F"{UNI_FACTOR}{BI_FACTOR}{TRI_FACTOR}"
 
     print('\nIntegrating IBC data...')
-    DO_IBC_INTEGRATION = True
+
+    DO_IBC_INTEGRATION = False
+
     if DO_IBC_INTEGRATION:
         with open("./../Dataset/ibc_data/feature_lists/neu_list.csv", 'r') as f:
             reader = csv.DictReader(f)
@@ -179,57 +179,66 @@ def ibc_classify(data: pd.DataFrame):
     else:
         filename = F'Vectorizers/{VEC_ID}_cv.sav'
         text_counts = pickle.load(open(filename, 'rb'))
+
     print(F"Select features in first 5 docs:")
     for i in range(5):
         for j in I_RANGE:
-            print(F"\t{text_counts[i, j]}", end=" ")
+            print(F"\t({i}, {j}) {text_counts[i, j]}", end=" ")
         print()
 
-    print('\nTfidf transform...')
-    DO_TFIDF_INTEGRATION = False
-    if DO_TFIDF_INTEGRATION:
-        tfidf_counts = TfidfTransformer().fit_transform(text_counts)
-        filename = F'Vectorizers/{VEC_ID}_tfidf.sav'
-        pickle.dump(tfidf_counts, open(filename, 'wb'))
-    else:
-        filename = F'Vectorizers/{VEC_ID}_tfidf.sav'
-        tfidf_counts = pickle.load(open(filename, 'rb'))
+    # print('\nTfidf transform...')
+    # DO_TFIDF_INTEGRATION = False
+    # if DO_TFIDF_INTEGRATION:
+    #     tfidf_counts = TfidfTransformer().fit_transform(text_counts)
+    #     filename = F'Vectorizers/{VEC_ID}_tfidf.sav'
+    #     pickle.dump(tfidf_counts, open(filename, 'wb'))
+    # else:
+    #     filename = F'Vectorizers/{VEC_ID}_tfidf.sav'
+    #     tfidf_counts = pickle.load(open(filename, 'rb'))
 
     tfidf_counts = text_counts
-    print(F"Select features in first 5 docs:")
-    for i in range(5):
-        for j in I_RANGE:
-            print(F"\t{float(tfidf_counts[i, j]):.2}", end=" ")
-        print()
-
+    # print(F"Select features in first 5 docs:")
+    # for i in range(5):
+    #     for j in I_RANGE:
+    #         print(F"\t{float(tfidf_counts[i, j]):.2}", end=" ")
+    #     print()
+    RANDOM_STATE = 999
     X_train, X_test, y_train, y_test = train_test_split(
-        tfidf_counts, data['allsides_bias'], test_size=0.3, random_state=123)
+        tfidf_counts, data['allsides_bias'], test_size=0.3, random_state=RANDOM_STATE)
 
     print(F"\nTraining set:")
     print(F"Select features in first 5 docs:")
     for i in range(5):
         for j in I_RANGE:
-            print(F"\t{float(X_train[i, j]):.2}", end=" ")
+            print(F"\t({i}, {j}) {X_train[i, j]}", end=" ")
         print()
     print(F"First 5 tags: \n{y_train[:5]}")
 
     print('\nTraining Classifier...')
     # clf = SGDClassifier().fit(X_train, y_train)
 
-    start = time.time()
-    clf = AdaBoostClassifier().fit(X_train, y_train)
-    end = time.time()
-    print(F"elapsed time: {(end - start)/60:.2} min")
+    DO_CLASSIFICATION = False
     name = "AdaBoostClassifier"
+    percent = "93.571%"
+
+    start = time.time()
+    if DO_CLASSIFICATION:
+        clf = AdaBoostClassifier().fit(X_train, y_train)
+    else:
+        filename = F"Models/{percent}_ibc_{name}.sav"
+        clf = pickle.load(open(filename, 'rb'))
+    end = time.time()
+    print(F"elapsed time: {(end - start) / 60:.3} min")
+
     y_pred = clf.predict(X_test)
-    log_new()
+
     accuracy = metrics.accuracy_score(y_test, y_pred)
     print(F"{accuracy:.2%} - ibc{name}")
-    log_results(F"{accuracy:.2%} - ibc{name} - {VEC_ID}")
+    log_results(F"{accuracy:.2%} - ibc{name} - {VEC_ID} ({RANDOM_STATE})")
     my_tags = ['From the Right', 'From the Left', 'From the Center']
     print(classification_report(y_test, y_pred, target_names=my_tags))
 
-    filename = F'Models/{accuracy:.2%}_ibc_{name}.sav'
+    filename = F'Models/{accuracy:.3%}_ibc_{name}.sav'
     pickle.dump(clf, open(filename, 'wb'))
     return
 
