@@ -20,7 +20,7 @@ import time
 
 def main():
     clean_json('../released_data.json', '../Dataset/cleaned_data.json')  # uncomment to ues full dataset
-    # clean_json('../Dataset/test_data.json', '../Dataset/cleaned_data.json') # comment to use smaller dataset
+    # clean_json('../Dataset/test_article.json', '../Dataset/cleaned_data.json') # comment to use smaller dataset
 
     print("\nReading json...")
     # reads json data into a pandas dataframe object
@@ -62,6 +62,10 @@ def ibc_classify(data: pd.DataFrame):
     # row: document number, col: feature frequency, ordered by get_features_names()
     print("\nGenerate bag of words matrix...")
     text_counts = cv.fit_transform(tqdm(data['content']))  # returns a sparse matrix, entry = matrix[x, y]
+
+    filename = 'Features/ibc_cv.sav'
+    pickle.dump(cv, open(filename, 'wb'))
+
     M_SIZE = text_counts.shape
     DISPLAY_INDEX = 2901508  # index for the word "people"
     I_RANGE = range(DISPLAY_INDEX, DISPLAY_INDEX + 3)
@@ -78,101 +82,48 @@ def ibc_classify(data: pd.DataFrame):
     feature_dict = {feature_list[i]: i for i in range(0, len(feature_list))}
     print(F"Index for \'people\': {feature_dict['people']}")
 
-    NEU_LEN, LIB_LEN, CON_LEN = 14846, 4448, 4448
+    filename = 'Features/feature_dict.sav'
+    pickle.dump(feature_dict, open(filename, 'wb'))
+
+    NEU_LEN, LIB_LEN, CON_LEN = 7281, 2145, 2145
     ROW_LEN = M_SIZE[0]
-    UNI_FACTOR, BI_FACTOR, TRI_FACTOR = .1, .025, .0125
-    VEC_ID = F"{UNI_FACTOR}{BI_FACTOR}{TRI_FACTOR}"
+    FACTORS = (0.01, .0005, .00005)
+    VEC_ID = F"{FACTORS[0]}{FACTORS[1]}{FACTORS[2]}"
 
     print('\nIntegrating IBC data...')
 
     DO_IBC_INTEGRATION = False
 
     if DO_IBC_INTEGRATION:
-        with open("./../Dataset/ibc_data/feature_lists/neu_list.csv", 'r') as f:
-            reader = csv.DictReader(f)
-            pbar = tqdm(total=NEU_LEN)
-            for row in reader:
-                if row['gram'] == '1':
-                    if row['1st'] in feature_dict:
-                        i = feature_dict[row['1st']]
-                        for doc_i in range(ROW_LEN):
-                            if text_counts[doc_i, i] > 0:
-                                text_counts[doc_i, i] *= 1.0 * float(row['freq']) / UNI_FACTOR
-                if row['gram'] == '2':
-                    word = F"{row['1st']} {row['2nd']}"
+        def integrate_ibc(path, bias, LEN):
+            with open(path, 'r') as f:
+                reader = csv.DictReader(f)
+                pbar = tqdm(total=LEN)
+                for row in reader:
+                    num_of_words = int(row['gram'])
+                    if num_of_words == 1:
+                        word = row['1st']
+                    elif num_of_words == 2:
+                        word = F"{row['1st']} {row['2nd']}"
+                    elif num_of_words == 3:
+                        word = F"{row['1st']} {row['2nd']} {row['3rd']}"
                     if word in feature_dict:
                         i = feature_dict[word]
                         for doc_i in range(ROW_LEN):
-                            if text_counts[doc_i, i] > 0:
-                                text_counts[doc_i, i] *= 1.0 * float(row['freq']) / BI_FACTOR
-                if row['gram'] == '3':
-                    word = F"{row['1st']} {row['2nd']} {row['3rd']}"
-                    if word in feature_dict:
-                        i = feature_dict[word]
-                        for doc_i in range(ROW_LEN):
-                            if text_counts[doc_i, i] > 0:
-                                text_counts[doc_i, i] *= 1.0 * float(row['freq']) / TRI_FACTOR
-                pbar.update(1)
-            pbar.close()
-        with open("./../Dataset/ibc_data/feature_lists/lib_list.csv", 'r') as f:
-            reader = csv.DictReader(f)
-            pbar = tqdm(total=LIB_LEN)
-            for row in reader:
-                if row['gram'] == '1':
-                    if row['1st'] in feature_dict:
-                        i = feature_dict[row['1st']]
-                        for doc_i in range(ROW_LEN):
-                            if (data['allsides_bias'][doc_i] == "From the Left"
+                            if (bias in data['allsides_bias'][doc_i]
                                     and text_counts[doc_i, i] > 0):
-                                text_counts[doc_i, i] *= 1.0 * float(row['freq']) / UNI_FACTOR
-                if row['gram'] == '2':
-                    word = F"{row['1st']} {row['2nd']}"
-                    if word in feature_dict:
-                        i = feature_dict[word]
-                        for doc_i in range(ROW_LEN):
-                            if (data['allsides_bias'][doc_i] == "From the Left"
-                                    and text_counts[doc_i, i] > 0):
-                                text_counts[doc_i, i] *= 1.0 * float(row['freq']) / BI_FACTOR
-                if row['gram'] == '3':
-                    word = F"{row['1st']} {row['2nd']} {row['3rd']}"
-                    if word in feature_dict:
-                        i = feature_dict[word]
-                        for doc_i in range(ROW_LEN):
-                            if (data['allsides_bias'][doc_i] == "From the Left"
-                                    and text_counts[doc_i, i] > 0):
-                                text_counts[doc_i, i] *= 1.0 * float(row['freq']) / TRI_FACTOR
+                                text_counts[doc_i, i] *= 1.0 * float(row['freq']) / FACTORS[num_of_words - 1]
 
-                pbar.update(1)
-            pbar.close()
-        with open("./../Dataset/ibc_data/feature_lists/con_list.csv", 'r') as f:
-            reader = csv.DictReader(f)
-            pbar = tqdm(total=CON_LEN)
-            for row in reader:
-                if row['gram'] == '1':
-                    if row['1st'] in feature_dict:
-                        i = feature_dict[row['1st']]
-                        for doc_i in range(ROW_LEN):
-                            if (data['allsides_bias'][doc_i] == "From the Right"
-                                    and text_counts[doc_i, i] > 0):
-                                text_counts[doc_i, i] *= 1.0 * float(row['freq']) / UNI_FACTOR
-                if row['gram'] == '2':
-                    word = F"{row['1st']} {row['2nd']}"
-                    if word in feature_dict:
-                        i = feature_dict[word]
-                        for doc_i in range(ROW_LEN):
-                            if (data['allsides_bias'][doc_i] == "From the Right"
-                                    and text_counts[doc_i, i] > 0):
-                                text_counts[doc_i, i] *= 1.0 * float(row['freq']) / BI_FACTOR
-                if row['gram'] == '3':
-                    word = F"{row['1st']} {row['2nd']} {row['3rd']}"
-                    if word in feature_dict:
-                        i = feature_dict[word]
-                        for doc_i in range(ROW_LEN):
-                            if (data['allsides_bias'][doc_i] == "From the Right"
-                                    and text_counts[doc_i, i] > 0):
-                                text_counts[doc_i, i] *= 1.0 * float(row['freq']) / TRI_FACTOR
-                pbar.update(1)
-            pbar.close()
+                    pbar.update(1)
+                pbar.close()
+            return
+
+        integrate_ibc("./../Dataset/ibc_data/feature_lists/neu_list.csv",
+                      "From the", NEU_LEN)
+        integrate_ibc("./../Dataset/ibc_data/feature_lists/lib_list.csv",
+                      "From the Left", LIB_LEN)
+        integrate_ibc("./../Dataset/ibc_data/feature_lists/con_list.csv",
+                      "From the Right", CON_LEN)
 
         filename = F'Vectorizers/{VEC_ID}_cv.sav'
         pickle.dump(text_counts, open(filename, 'wb'))
@@ -195,8 +146,8 @@ def ibc_classify(data: pd.DataFrame):
     # else:
     #     filename = F'Vectorizers/{VEC_ID}_tfidf.sav'
     #     tfidf_counts = pickle.load(open(filename, 'rb'))
-
-    tfidf_counts = text_counts
+    #
+    # tfidf_counts = text_counts
     # print(F"Select features in first 5 docs:")
     # for i in range(5):
     #     for j in I_RANGE:
@@ -204,7 +155,7 @@ def ibc_classify(data: pd.DataFrame):
     #     print()
     RANDOM_STATE = 999
     X_train, X_test, y_train, y_test = train_test_split(
-        tfidf_counts, data['allsides_bias'], test_size=0.3, random_state=RANDOM_STATE)
+        text_counts, data['allsides_bias'], test_size=0.3, random_state=RANDOM_STATE)
 
     print(F"\nTraining set:")
     print(F"Select features in first 5 docs:")
@@ -219,7 +170,7 @@ def ibc_classify(data: pd.DataFrame):
 
     DO_CLASSIFICATION = False
     name = "AdaBoostClassifier"
-    percent = "94.256%"
+    percent = "94.514%"
 
     start = time.time()
     if DO_CLASSIFICATION:
@@ -234,7 +185,8 @@ def ibc_classify(data: pd.DataFrame):
 
     accuracy = metrics.accuracy_score(y_test, y_pred)
     print(F"{accuracy:.2%} - ibc{name}")
-    log_results(F"{accuracy:.2%} - ibc{name} - {VEC_ID} ({RANDOM_STATE})")
+    if DO_CLASSIFICATION or DO_IBC_INTEGRATION:
+        log_results(F"{accuracy:.2%} - ibc{name} - {VEC_ID} ({RANDOM_STATE})")
     my_tags = ['From the Right', 'From the Left', 'From the Center']
     print(classification_report(y_test, y_pred, target_names=my_tags))
 

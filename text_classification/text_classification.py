@@ -73,11 +73,11 @@ def main():
     # tf_idf(data, clf_name)  # uncomment to train specific classifier
 
     print("\nPipeline training...")
-    pipeline(data)  # uncomment to train all classifiers
+    # pipeline(data)  # uncomment to train all classifiers
     # pipeline(data, clf_name)  # uncomment to train specific classifier
 
     print("\nDoc2Vec training...")
-    doc2Vec(data)
+    # doc2Vec(data)
 
     print("\nOut-of-Sample Testing...")
     for name in classifiers.keys():

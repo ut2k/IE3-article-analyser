@@ -95,41 +95,6 @@ def get_ibc_data(use_neutral=False,
         return X, Y
 
 
-def find_most_common(lib_Fdist, con_Fdist, neu_Fdist, n):
-    lib_len = 2025
-    con_len = 1701
-    neu_len = 600
-
-    lib_Fdist.clear()
-    con_Fdist.clear()
-    neu_Fdist.clear()
-
-    REPLACE_BY_SPACE_RE = re.compile('[/(){}\[\]\|@,;]')
-    BAD_SYMBOLS_RE = re.compile('[^0-9a-z #+_]')
-    STOPWORDS = set(stopwords.words('english'))
-    STOPWORDS.update(['would', 'use', 'make'])
-
-    def clean_text(text):
-        text = text.lower()  # lowercase text
-        text = REPLACE_BY_SPACE_RE.sub(' ', text)  # replace REPLACE_BY_SPACE_RE symbols by space in text
-        text = BAD_SYMBOLS_RE.sub('', text)  # delete symbols which are in BAD_SYMBOLS_RE from text
-        text = ' '.join(word for word in text.split() if word not in STOPWORDS)  # delete stopwors from text
-        return text
-
-    i = 0
-    for sent in X:
-        clean_sent = clean_text(sent)
-        for g in ngrams(word_tokenize(clean_sent), n):
-            if Y[i] == 0:
-                lib_Fdist[g] += 1000/lib_len
-            if Y[i] == 1:
-                con_Fdist[g] += 1000/con_len
-            if Y[i] == 2:
-                neu_Fdist[g] += 1000/neu_len
-
-        i += 1
-
-
 if __name__ == '__main__':
 
     X, Y, P = get_ibc_data(use_neutral=True,
@@ -145,9 +110,46 @@ if __name__ == '__main__':
     neu_dict = dict()
     gen_dict = dict()
 
-    MAX_FEATURES = 2000
+    MAX_FEATURES = 5000
+
+
+    def find_most_common(lib_Fdist, con_Fdist, neu_Fdist, n):
+        lib_len = 2025
+        con_len = 1701
+        neu_len = 600
+
+        lib_Fdist.clear()
+        con_Fdist.clear()
+        neu_Fdist.clear()
+
+        REPLACE_BY_SPACE_RE = re.compile('[/(){}\[\]\|@,;]')
+        BAD_SYMBOLS_RE = re.compile('[^0-9a-z #+_]')
+        STOPWORDS = set(stopwords.words('english'))
+        STOPWORDS.update(['would', 'use', 'make'])
+
+        def clean_text(text):
+            text = text.lower()  # lowercase text
+            text = REPLACE_BY_SPACE_RE.sub(' ', text)  # replace REPLACE_BY_SPACE_RE symbols by space in text
+            text = BAD_SYMBOLS_RE.sub('', text)  # delete symbols which are in BAD_SYMBOLS_RE from text
+            text = ' '.join(word for word in text.split() if word not in STOPWORDS)  # delete stopwors from text
+            return text
+
+        i = 0
+        # nomalize by number of sentences
+        for sent in X:
+            clean_sent = clean_text(sent)
+            for g in ngrams(word_tokenize(clean_sent), n):
+                if Y[i] == 0:
+                    lib_Fdist[g] += 1000 / lib_len
+                if Y[i] == 1:
+                    con_Fdist[g] += 1000 / con_len
+                if Y[i] == 2:
+                    neu_Fdist[g] += 1000 / neu_len
+
+            i += 1
 
     def fdist_to_dict(fd, d):
+        print(fd.most_common(5))
         for term, freq in fd.most_common(MAX_FEATURES): # for n-grams: [(("word_1","word_2",...,"word_n"), freq),...]
             d.setdefault(term, []).append(freq)
 
@@ -155,12 +157,12 @@ if __name__ == '__main__':
     fdist_to_dict(lib_Fdist, lib_dict)
     fdist_to_dict(con_Fdist, con_dict)
     fdist_to_dict(neu_Fdist, neu_dict)
-
+    print()
     find_most_common(lib_Fdist, con_Fdist, neu_Fdist, 2)
     fdist_to_dict(lib_Fdist, lib_dict)
     fdist_to_dict(con_Fdist, con_dict)
     fdist_to_dict(neu_Fdist, neu_dict)
-
+    print()
     find_most_common(lib_Fdist, con_Fdist, neu_Fdist, 3)
     fdist_to_dict(lib_Fdist, lib_dict)
     fdist_to_dict(con_Fdist, con_dict)
@@ -170,7 +172,8 @@ if __name__ == '__main__':
     def add_to_gen_dict(d):
         for term, freq in d.items():
             if term in gen_dict:
-                gen_dict[term][0] += freq[0]
+                temp = gen_dict[term][0] + freq[0]
+                gen_dict.update({term: [temp]})
             else:
                 gen_dict[term] = freq
 
@@ -193,11 +196,11 @@ if __name__ == '__main__':
 
     # remove all overlap between lib and conv
     temp_lib_dict = dict()
-    for term, freq in lib_dict.items():
-        if term in con_dict:
+    for term, lib_freq in lib_dict.items():
+        if term in con_dict:  # only keep the more frequent one
             con_dict.pop(term)
         else:
-            temp_lib_dict[term] = freq
+            temp_lib_dict[term] = lib_freq
 
     lib_dict = temp_lib_dict
 

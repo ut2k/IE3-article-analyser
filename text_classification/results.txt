@@ -54,3 +54,26 @@
 
 17:14:26 02/03/2021 - New training session:
 17:15:43 02/03/2021 - 94.08% - ibcAdaBoostClassifier - 0.50.250.125 (999)
+
+17:52:15 03/03/2021 - New training session:
+18:53:09 03/03/2021 - 93.74% - ibcAdaBoostClassifier - 0.10.0250.0125 (999)
+
+18:56:09 03/03/2021 - New training session:
+19:20:31 03/03/2021 - 93.31% - ibcAdaBoostClassifier - 0.10.0250.0125 (74982)
+
+19:32:34 03/03/2021 - New training session:
+20:29:59 03/03/2021 - 91.60% - ibcAdaBoostClassifier - 10.20.1 (999)
+
+20:39:17 03/03/2021 - New training session:
+21:35:12 03/03/2021 - 93.74% - ibcAdaBoostClassifier - 0.010.0020.002 (999)
+
+21:44:51 03/03/2021 - New training session:
+22:25:23 03/03/2021 - 94.51% - ibcAdaBoostClassifier - 0.010.00055e-05 (999)
+
+04:24:32 04/03/2021 - New training session:
+04:45:47 04/03/2021 - 92.28% - ibcAdaBoostClassifier - 0.10.050.05 (999)
+
+04:49:51 04/03/2021 - New training session:
+05:21:14 04/03/2021 - 91.08% - ibcAdaBoostClassifier - 0.0090.00055e-05 (999)
+
+05:25:50 04/03/2021 - New training session:
