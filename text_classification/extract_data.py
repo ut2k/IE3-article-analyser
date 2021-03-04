@@ -45,7 +45,7 @@ def get_ibc_data(use_neutral=False,
     :return: X, Y, P?
     """
 
-    lib, con, neutral = pickle.load(open('ibcData.pkl', 'rb'))
+    lib, con, neutral = pickle.load(open('../Dataset/ibc_data/ibcData.pkl', 'rb'))
     # print(len(lib))
     # print(len(con))
 
@@ -110,7 +110,7 @@ if __name__ == '__main__':
     neu_dict = dict()
     gen_dict = dict()
 
-    MAX_FEATURES = 5000
+    MAX_FEATURES = 1500
 
 
     def find_most_common(lib_Fdist, con_Fdist, neu_Fdist, n):
@@ -148,6 +148,8 @@ if __name__ == '__main__':
 
             i += 1
 
+    print("\nwriting to memory...")
+
     def fdist_to_dict(fd, d):
         print(fd.most_common(5))
         for term, freq in fd.most_common(MAX_FEATURES): # for n-grams: [(("word_1","word_2",...,"word_n"), freq),...]
@@ -172,6 +174,7 @@ if __name__ == '__main__':
     def add_to_gen_dict(d):
         for term, freq in d.items():
             if term in gen_dict:
+                # gen_dict[term][0] += freq[0]
                 temp = gen_dict[term][0] + freq[0]
                 gen_dict.update({term: [temp]})
             else:
@@ -181,6 +184,7 @@ if __name__ == '__main__':
     add_to_gen_dict(con_dict)
     add_to_gen_dict(neu_dict)
 
+    print("\nwriting to files...")
     def dict_to_file(path, d):
         with open(path, 'w') as f:
             f.write("gram,1st,2nd,3rd,freq\n")
@@ -192,7 +196,7 @@ if __name__ == '__main__':
                 if len(term) == 3:
                     f.write(F"3, {term[0]},{term[1]},{term[2]},{freq[0]}\n")
 
-    dict_to_file("feature_lists/neu_list.csv", gen_dict)
+    dict_to_file("../Dataset/ibc_data/feature_lists/neu_list.csv", gen_dict)
 
     # remove all overlap between lib and conv
     temp_lib_dict = dict()
@@ -204,7 +208,7 @@ if __name__ == '__main__':
 
     lib_dict = temp_lib_dict
 
-    dict_to_file("feature_lists/lib_list.csv", lib_dict)
-    dict_to_file("feature_lists/con_list.csv", con_dict)
+    dict_to_file("../Dataset/ibc_data/feature_lists/lib_list.csv", lib_dict)
+    dict_to_file("../Dataset/ibc_data/feature_lists/con_list.csv", con_dict)
 
 

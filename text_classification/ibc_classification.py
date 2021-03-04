@@ -56,43 +56,63 @@ def ibc_classify(data: pd.DataFrame):
     # for i in range(5):
     #     print(F"{i + 1}: {data['content'][i][:50]}...")
 
-    tokens = RegexpTokenizer(r'[a-zA-Z]+')
-    cv = CountVectorizer(tokenizer=tokens.tokenize, stop_words="english", ngram_range=(1, 3))
-
-    # row: document number, col: feature frequency, ordered by get_features_names()
-    print("\nGenerate bag of words matrix...")
-    text_counts = cv.fit_transform(tqdm(data['content']))  # returns a sparse matrix, entry = matrix[x, y]
-
-    filename = 'Features/ibc_cv.sav'
-    pickle.dump(cv, open(filename, 'wb'))
-
-    M_SIZE = text_counts.shape
+    DO_IBC_INTEGRATION = False
+    DO_CLASSIFICATION = False
+    CLF_NAME = "AdaBoostClassifier"
+    PERCENT = "93.956%"
+    WORD = "people"
     DISPLAY_INDEX = 2901508  # index for the word "people"
-    I_RANGE = range(DISPLAY_INDEX, DISPLAY_INDEX + 3)
-    print(F"Matrix size: {M_SIZE}")
 
-    feature_list = cv.get_feature_names()
-    print(F"Select features: {feature_list[DISPLAY_INDEX: DISPLAY_INDEX + 3]}")
-    print(F"Select features in first 5 docs:")
-    for i in range(5):
-        for j in I_RANGE:
-            print(F"\t({i}, {j}) {text_counts[i, j]}", end=" ")
-        print()
-    # turn feature_list into a dict with the index as value -> random access
-    feature_dict = {feature_list[i]: i for i in range(0, len(feature_list))}
-    print(F"Index for \'people\': {feature_dict['people']}")
-
-    filename = 'Features/feature_dict.sav'
-    pickle.dump(feature_dict, open(filename, 'wb'))
-
-    NEU_LEN, LIB_LEN, CON_LEN = 7281, 2145, 2145
-    ROW_LEN = M_SIZE[0]
-    FACTORS = (0.01, .0005, .00005)
+    NEU_LEN, LIB_LEN, CON_LEN = 37471, 11637, 11637
+    ROW_LEN = 7774
+    FACTORS = (0.01, .0025, .0015)
     VEC_ID = F"{FACTORS[0]}{FACTORS[1]}{FACTORS[2]}"
 
-    print('\nIntegrating IBC data...')
+    if DO_IBC_INTEGRATION or DO_CLASSIFICATION:
+        tokens = RegexpTokenizer(r'[a-zA-Z]+')
+        cv = CountVectorizer(tokenizer=tokens.tokenize, stop_words="english", ngram_range=(1, 3))
 
-    DO_IBC_INTEGRATION = False
+        # row: document number, col: feature frequency, ordered by get_features_names()
+        print("\nGenerate bag of words matrix...")
+        text_counts = cv.fit_transform(tqdm(data['content']))  # returns a sparse matrix, entry = matrix[x, y]
+
+        filename = 'Features/ibc_cv.sav'
+        pickle.dump(cv, open(filename, 'wb'))
+
+        M_SIZE = text_counts.shape
+        print(F"Matrix size: {M_SIZE}")
+
+        feature_list = cv.get_feature_names()
+        print(F"Select features: {feature_list[DISPLAY_INDEX: DISPLAY_INDEX + 3]}")
+        print(F"Select features in first 5 docs:")
+        for i in range(5):
+            print(F"\t({i}, {DISPLAY_INDEX}) {text_counts[i, DISPLAY_INDEX]}")
+
+        # turn feature_list into a dict with the index as value -> random access
+        feature_dict = {feature_list[i]: i for i in range(0, len(feature_list))}
+        print(F"Index for \'{WORD}\': {feature_dict[WORD]}")
+
+        filename = 'Features/feature_dict.sav'
+        pickle.dump(feature_dict, open(filename, 'wb'))
+    else:
+        filename = F"Features/ibc_cv.sav"
+        cv = pickle.load(open(filename, 'rb'))
+
+        print("\nGenerate bag of words matrix...")
+        text_counts = cv.transform(tqdm(data['content']))  # returns a sparse matrix, entry = matrix[x, y]
+        M_SIZE = text_counts.shape
+
+        print(F"Matrix size: {M_SIZE}")
+        print(F"Select feature: [{WORD}]")
+        print("Select features in first 5 docs:")
+        for i in range(5):
+            print(F"\t({i}, {DISPLAY_INDEX}) {text_counts[i, DISPLAY_INDEX]}")
+
+        filename = 'Features/feature_dict.sav'
+        feature_dict = pickle.load(open(filename, 'rb'))
+        print(F"Index for \'{WORD}\': {feature_dict[WORD]}")
+
+    print('\nIntegrating IBC data...')
 
     if DO_IBC_INTEGRATION:
         def integrate_ibc(path, bias, LEN):
@@ -133,9 +153,7 @@ def ibc_classify(data: pd.DataFrame):
 
     print(F"Select features in first 5 docs:")
     for i in range(5):
-        for j in I_RANGE:
-            print(F"\t({i}, {j}) {text_counts[i, j]}", end=" ")
-        print()
+        print(F"\t({i}, {DISPLAY_INDEX}) {text_counts[i, DISPLAY_INDEX]}")
 
     # print('\nTfidf transform...')
     # DO_TFIDF_INTEGRATION = False
@@ -153,6 +171,7 @@ def ibc_classify(data: pd.DataFrame):
     #     for j in I_RANGE:
     #         print(F"\t{float(tfidf_counts[i, j]):.2}", end=" ")
     #     print()
+
     RANDOM_STATE = 999
     X_train, X_test, y_train, y_test = train_test_split(
         text_counts, data['allsides_bias'], test_size=0.3, random_state=RANDOM_STATE)
@@ -160,23 +179,17 @@ def ibc_classify(data: pd.DataFrame):
     print(F"\nTraining set:")
     print(F"Select features in first 5 docs:")
     for i in range(5):
-        for j in I_RANGE:
-            print(F"\t({i}, {j}) {X_train[i, j]}", end=" ")
-        print()
+        print(F"\t({i}, {DISPLAY_INDEX}) {X_train[i, DISPLAY_INDEX]}")
+
     print(F"First 5 tags: \n{y_train[:5]}")
 
     print('\nTraining Classifier...')
-    # clf = SGDClassifier().fit(X_train, y_train)
-
-    DO_CLASSIFICATION = False
-    name = "AdaBoostClassifier"
-    percent = "94.514%"
 
     start = time.time()
     if DO_CLASSIFICATION:
         clf = AdaBoostClassifier().fit(X_train, y_train)
     else:
-        filename = F"Models/{percent}_ibc_{name}.sav"
+        filename = F"Models/{PERCENT}_ibc_{CLF_NAME}.sav"
         clf = pickle.load(open(filename, 'rb'))
     end = time.time()
     print(F"elapsed time: {(end - start) / 60:.3} min")
@@ -184,14 +197,14 @@ def ibc_classify(data: pd.DataFrame):
     y_pred = clf.predict(X_test)
 
     accuracy = metrics.accuracy_score(y_test, y_pred)
-    print(F"{accuracy:.2%} - ibc{name}")
+    print(F"{accuracy:.2%} - ibc{CLF_NAME}")
     if DO_CLASSIFICATION or DO_IBC_INTEGRATION:
-        log_results(F"{accuracy:.2%} - ibc{name} - {VEC_ID} ({RANDOM_STATE})")
+        log_results(F"{accuracy:.2%} - ibc{CLF_NAME} - {VEC_ID} ({RANDOM_STATE})")
     my_tags = ['From the Right', 'From the Left', 'From the Center']
     print(classification_report(y_test, y_pred, target_names=my_tags))
 
     if DO_CLASSIFICATION:
-        filename = F'Models/{accuracy:.3%}_ibc_{name}.sav'
+        filename = F'Models/{accuracy:.3%}_ibc_{CLF_NAME}.sav'
         pickle.dump(clf, open(filename, 'wb'))
 
     return

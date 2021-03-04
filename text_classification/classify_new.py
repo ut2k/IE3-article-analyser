@@ -2,11 +2,10 @@ import pickle
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from nltk.tokenize import RegexpTokenizer
-from tqdm import tqdm
-
-tqdm.pandas(desc="progress-bar")
 import csv
 import time
+from tqdm import tqdm
+tqdm.pandas(desc="progress-bar")
 
 
 def main():
@@ -46,8 +45,9 @@ def ibc_classify(data: pd.DataFrame):
 
     NEU_LEN, LIB_LEN, CON_LEN = 14846, 4448, 4448
     ROW_LEN = LEN
-    FACTORS = (0.01, .0005, .00005)
-    VEC_ID = F"{FACTORS[0]}{FACTORS[1]}{FACTORS[2]}"
+    FACTORS = (0.01, .0025, .0015)
+    CLF_NAME = "AdaBoostClassifier"
+    PERCENT = "93.956%"
 
     print('\nIntegrating IBC data...')
 
@@ -67,7 +67,7 @@ def ibc_classify(data: pd.DataFrame):
                     i = feature_dict[word]
                     for doc_i in range(ROW_LEN):
                         if text_counts[doc_i, i] > 0:
-                            text_counts[doc_i, i] *= 1.0 * float(row['freq']) / FACTORS[num_of_words - 1]
+                            text_counts[doc_i, i] *= float(row['freq']) / FACTORS[num_of_words - 1]
 
                 pbar.update(1)
             pbar.close()
@@ -80,10 +80,7 @@ def ibc_classify(data: pd.DataFrame):
     for i in range(LEN):
         print(F"\t({i}, {DISPLAY_INDEX}) {text_counts[i, DISPLAY_INDEX]}")
 
-    name = "AdaBoostClassifier"
-    percent = "94.514%"
-
-    filename = F"Models/{percent}_ibc_{name}.sav"
+    filename = F"Models/{PERCENT}_ibc_{CLF_NAME}.sav"
     clf = pickle.load(open(filename, 'rb'))
 
     predicted = clf.predict_proba(text_counts)
