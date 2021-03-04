@@ -19,38 +19,22 @@
 13:08:31 28/02/2021 - 72.91% - cvLogisticRegression
 13:08:54 28/02/2021 - 77.93% - cvAdaBoostClassifier
 
-12:53:55 02/02/2021 - New training session:
-12:53:56 02/02/2021 - 88.51% - ibcAdaBoostClassifier - 51.50.75 (123)
-
-13:30:18 02/02/2021 - New training session:
-13:30:18 02/02/2021 - 90.70% - ibcAdaBoostClassifier - 51.50.75 (123)
-
-14:21:55 02/02/2021 - New training session:
-14:48:50 02/02/2021 - 92.03% - ibcAdaBoostClassifier - 2.50.50.25 (123)
-
-14:59:10 02/02/2021 - New training session:
-16:02:02 02/02/2021 - 88.68% - ibcAdaBoostClassifier - 1010.5 (123)
-
-16:05:23 02/02/2021 - New training session:
-17:02:29 02/02/2021 - 89.11% - ibcAdaBoostClassifier - 30.50.125 (123)
-
-17:23:05 02/02/2021 - New training session:
-18:23:05 02/02/2021 - 92.03% - ibcAdaBoostClassifier - 2.50.750.375 (123)
-
-18:30:43 02/02/2021 - New training session:
-19:25:56 02/02/2021 - 93.66% - ibcAdaBoostClassifier - 10.250.125 (123)
-
-19:45:53 02/02/2021 - New training session:
-20:42:39 02/02/2021 - 93.74% - ibcAdaBoostClassifier - 0.10.0250.0125 (123)
-
-20:47:11 02/02/2021 - New training session:
-21:41:03 02/02/2021 - 93.57% - ibcAdaBoostClassifier - 0.50.250.125 (123)
-
 17:02:05 02/03/2021 - New training session:
 17:03:06 02/03/2021 - 94.26% - ibcAdaBoostClassifier - 0.10.0250.0125 (999)
 
-17:09:39 02/03/2021 - New training session:
-17:10:43 02/03/2021 - 93.70% - ibcAdaBoostClassifier - 10.250.125 (999)
+17:40:03 04/03/2021 - New training session:
+18:47:40 04/03/2021 - 93.74% - ibcAdaBoostClassifier - 0.010.00250.00125 (999) (2000 split)
 
-17:14:26 02/03/2021 - New training session:
-17:15:43 02/03/2021 - 94.08% - ibcAdaBoostClassifier - 0.50.250.125 (999)
+18:51:54 04/03/2021 - New training session:
+19:30:05 04/03/2021 - 94.51% - ibcAdaBoostClassifier - 0.010.0020.001 (999) (1000 split)
+
+23:28:48 04/03/2021 - New training session:
+00:36:46 05/03/2021 - 93.96% - ibcAdaBoostClassifier - 0.010.00250.0015 (999) (1500 split)
+
+01:23:08 05/03/2021 - New training session:
+
+01:37:24 05/03/2021 - New training session:
+
+01:38:28 05/03/2021 - New training session:
+
+01:39:13 05/03/2021 - New training session:
