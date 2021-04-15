@@ -16,6 +16,7 @@ from sklearn.ensemble import AdaBoostClassifier
 from sklearn import metrics
 from sklearn.linear_model import SGDClassifier
 import time
+from scipy import sparse
 
 
 def main():
@@ -115,7 +116,8 @@ def ibc_classify(data: pd.DataFrame):
     print('\nIntegrating IBC data...')
 
     if DO_IBC_INTEGRATION:
-        def integrate_ibc(path, bias, LEN):
+        def integrate_ibc(path, bias, LEN, tc):
+            lil_tc = sparse.lil_matrix(tc)
             with open(path, 'r') as f:
                 reader = csv.DictReader(f)
                 pbar = tqdm(total=LEN)
@@ -136,14 +138,14 @@ def ibc_classify(data: pd.DataFrame):
 
                     pbar.update(1)
                 pbar.close()
-            return
+            return sparse.csr_matrix(lil_tc)
 
-        integrate_ibc("./../Dataset/ibc_data/feature_lists/neu_list.csv",
-                      "From the", NEU_LEN)
-        integrate_ibc("./../Dataset/ibc_data/feature_lists/lib_list.csv",
-                      "From the Left", LIB_LEN)
-        integrate_ibc("./../Dataset/ibc_data/feature_lists/con_list.csv",
-                      "From the Right", CON_LEN)
+        text_counts = integrate_ibc("./../Dataset/ibc_data/feature_lists/neu_list.csv",
+                      "From the", NEU_LEN, text_counts)
+        text_counts = integrate_ibc("./../Dataset/ibc_data/feature_lists/lib_list.csv",
+                      "From the Left", LIB_LEN, text_counts)
+        text_counts = integrate_ibc("./../Dataset/ibc_data/feature_lists/con_list.csv",
+                      "From the Right", CON_LEN, text_counts)
 
         filename = F'Vectorizers/{VEC_ID}_cv.sav'
         pickle.dump(text_counts, open(filename, 'wb'))
