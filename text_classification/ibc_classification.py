@@ -157,22 +157,6 @@ def ibc_classify(data: pd.DataFrame):
     for i in range(5):
         print(F"\t({i}, {DISPLAY_INDEX}) {text_counts[i, DISPLAY_INDEX]}")
 
-    # print('\nTfidf transform...')
-    # DO_TFIDF_INTEGRATION = False
-    # if DO_TFIDF_INTEGRATION:
-    #     tfidf_counts = TfidfTransformer().fit_transform(text_counts)
-    #     filename = F'Vectorizers/{VEC_ID}_tfidf.sav'
-    #     pickle.dump(tfidf_counts, open(filename, 'wb'))
-    # else:
-    #     filename = F'Vectorizers/{VEC_ID}_tfidf.sav'
-    #     tfidf_counts = pickle.load(open(filename, 'rb'))
-    #
-    # tfidf_counts = text_counts
-    # print(F"Select features in first 5 docs:")
-    # for i in range(5):
-    #     for j in I_RANGE:
-    #         print(F"\t{float(tfidf_counts[i, j]):.2}", end=" ")
-    #     print()
 
     RANDOM_STATE = 999
     X_train, X_test, y_train, y_test = train_test_split(

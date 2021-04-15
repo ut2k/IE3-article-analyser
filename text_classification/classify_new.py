@@ -5,6 +5,7 @@ from nltk.tokenize import RegexpTokenizer
 import csv
 import time
 from tqdm import tqdm
+from scipy import sparse
 tqdm.pandas(desc="progress-bar")
 
 
@@ -51,10 +52,10 @@ def ibc_classify(data: pd.DataFrame):
 
     print('\nIntegrating IBC data...')
 
-    def integrate_ibc(path, length):
+    def integrate_ibc(path, length, tc):
+        lil_tc = sparse.lil_matrix(tc)
         with open(path, 'r') as f:
             reader = csv.DictReader(f)
-            pbar = tqdm(total=length)
             for row in reader:
                 num_of_words = int(row['gram'])
                 if num_of_words == 1:
@@ -64,17 +65,16 @@ def ibc_classify(data: pd.DataFrame):
                 elif num_of_words == 3:
                     word = F"{row['1st']} {row['2nd']} {row['3rd']}"
                 if word in feature_dict:
-                    i = feature_dict[word]
+                    word_i = feature_dict[word]
                     for doc_i in range(ROW_LEN):
-                        if text_counts[doc_i, i] > 0:
-                            text_counts[doc_i, i] *= float(row['freq']) / FACTORS[num_of_words - 1]
+                        if lil_tc[doc_i, word_i] > 0:
+                            lil_tc[doc_i, word_i] *= float(row['freq']) / FACTORS[num_of_words - 1]
 
-                pbar.update(1)
-            pbar.close()
+            return sparse.csr_matrix(lil_tc)
 
-    integrate_ibc("./../Dataset/ibc_data/feature_lists/neu_list.csv", NEU_LEN)
-    integrate_ibc("./../Dataset/ibc_data/feature_lists/lib_list.csv", LIB_LEN)
-    integrate_ibc("./../Dataset/ibc_data/feature_lists/con_list.csv", CON_LEN)
+    text_counts =integrate_ibc("./../Dataset/ibc_data/feature_lists/neu_list.csv", NEU_LEN, text_counts)
+    text_counts =integrate_ibc("./../Dataset/ibc_data/feature_lists/lib_list.csv", LIB_LEN, text_counts)
+    text_counts =integrate_ibc("./../Dataset/ibc_data/feature_lists/con_list.csv", CON_LEN, text_counts)
 
     print(F"Select feature in docs:")
     for i in range(LEN):
